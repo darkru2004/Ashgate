@@ -169,6 +169,30 @@
         e2_nameless: { id: 'e2_nameless', kind: 'minion', name: '이름 없는 자', life: 4, each: [E('hitGrave', 1)], onDeath: [E('returnDevoured', 1)] },
         e2_clad:     { id: 'e2_clad',     kind: 'minion', name: '이름을 입은 것', life: 3, lifePlus: 'devoured', each: [E('hitMage', 2)] }
       }
+    },
+    e3: {
+      id: 'e3', name: '뒤섞는 자', life: 80,
+      recommended: 'e3',
+      scaling: { 1: { nemLife: 1.0 }, 2: { nemLife: 1.65 }, 3: { nemLife: 1.3 }, 4: { nemLife: 1.8, graveLife: 0.68 } },
+      epitaph: { win: '말이 제 순서를 찾는다. 뒤섞는 자는 더 이상 말하지 못한다.', lose: '기억을, 너의, 내가, 정리해 주마. 아무도 제 이름을 기억하지 못한다.', after: '순서를 되찾은 기억은 아직 어딘가 한 줄씩 어긋나 있다.' },
+      // 삼킴: 성채 -3, 지기 1명의 버림 더미가 뒤섞인다
+      unleash: { step: 1, threshold: 4, strike: [E('hitGrave', 3), E('scramble', 1, { who: 'one' })] },
+      targeting: 'random',
+      deck: {
+        e3_tangle: 3, e3_reverse: 2, e3_stagger: 2, e3_breath: 1,
+        e3_vortex: 2, e3_syntax: 1,
+        e3_skein: 2, e3_shard: 3
+      },
+      cards: {
+        e3_tangle:  { id: 'e3_tangle',  kind: 'attack', name: '뒤엉킨 말',      effects: [E('hitMage', 2), E('unleash', 1)] },
+        e3_reverse: { id: 'e3_reverse', kind: 'attack', name: '거꾸로 된 기억', effects: [E('scramble', 1, { who: 'one' })] },
+        e3_stagger: { id: 'e3_stagger', kind: 'attack', name: '엇갈린 걸음',   effects: [E('hitGrave', 3), E('reshuffleTurns', 1)] },
+        e3_breath:  { id: 'e3_breath',  kind: 'attack', name: '흐트러진 숨',   effects: [E('unleash', 2)] },
+        e3_vortex:  { id: 'e3_vortex',  kind: 'power', name: '망각의 소용돌이', countdown: 3, disarm: 6, effects: [E('scramble', 1, { who: 'all' }), E('hitGrave', 3)] },
+        e3_syntax:  { id: 'e3_syntax',  kind: 'power', name: '어순 붕괴',       countdown: 2, disarm: 4, effects: [E('unleash', 2), E('hitMage', 3)] },
+        e3_skein:   { id: 'e3_skein',   kind: 'minion', name: '엉킨 실타래', life: 5, each: [E('unleash', 1)] },
+        e3_shard:   { id: 'e3_shard',   kind: 'minion', name: '거울 조각',   life: 3, each: [E('hitMage', 2)] }
+      }
     }
   };
 
@@ -251,6 +275,12 @@
         relics: ['r_thread', 'r_knot'],
         spells: ['s_arrow', 's_rage', 's_thief', 's_star']
       },
+      // E3(섞임) 대응: E2와 같은 구성 (누군가의 매듭, 도둑의 손버릇)
+      e3: {
+        gems: ['g_smith', 'g_pilgrim', 'g_baker'],
+        relics: ['r_thread', 'r_knot'],
+        spells: ['s_arrow', 's_rage', 's_thief', 's_star']
+      },
       // 잊음 카드가 많은 세트 (잊음 비용 검증용이자 "압축형" 플레이용)
       forget: {
         gems: ['g_drifter', 'g_smith', 'g_baker'],
@@ -265,7 +295,7 @@
     // 새 시나리오를 만들 때 이 항목만 채우면 밸런스 도구가 목표 승률에 맞춰 준다.
     balance: {
       target: [0.60, 0.75],
-      knobs: ['nemeses.e1.life', 'nemeses.e2.life', 'gravehold.life'],
+      knobs: ['nemeses.e1.life', 'nemeses.e2.life', 'nemeses.e3.life', 'gravehold.life'],
       games: 3000
     }
   };

@@ -6,12 +6,12 @@ function lint(scn) {
   const NEMS = scn.nemeses || { default: scn.nemesis };
   const C = scn.cards, NC = {};
   Object.keys(NEMS).forEach(k => Object.assign(NC, NEMS[k].cards));
-  const ops = new Set(['ember', 'dmg', 'heal', 'healMage', 'charge', 'chargeReset', 'draw', 'hitGrave', 'hitMage', 'hitSelf', 'hunger', 'unleash', 'forget', 'recall', 'focusAlly', 'openAlly', 'maxLife', 'dmgMinion', 'dmgAll', 'peekTurn', 'delayPower', 'anchor', 'devour', 'returnDevoured']);
+  const ops = new Set(['ember', 'dmg', 'heal', 'healMage', 'charge', 'chargeReset', 'draw', 'hitGrave', 'hitMage', 'hitSelf', 'hunger', 'unleash', 'forget', 'recall', 'focusAlly', 'openAlly', 'maxLife', 'dmgMinion', 'dmgAll', 'peekTurn', 'delayPower', 'anchor', 'devour', 'returnDevoured', 'scramble', 'reshuffleTurns']);
   const MAGES = scn.mages || [scn.mage];
   const checkEff = (where, eff) => (eff || []).forEach(e => { if (!ops.has(e.op)) errs.push(where + ': 알 수 없는 효과 ' + e.op);
     if (e.op !== 'chargeReset' && !(e.n > 0 || (e.op === 'hunger' && e.n < 0))) errs.push(where + ': 수치 오류');
     if (e.op === 'forget' && !['hand', 'deckTop', 'discardTop'].includes(e.from)) errs.push(where + ': forget.from 값 오류');
-    if (e.op === 'devour' && !['one', 'all'].includes(e.who)) errs.push(where + ': devour.who 값 오류');
+    if ((e.op === 'devour' || e.op === 'scramble') && !['one', 'all'].includes(e.who)) errs.push(where + ': devour.who 값 오류');
     if (e.op === 'recall' && !['top', 'hand'].includes(e.to)) errs.push(where + ': recall.to 값 오류'); });
   Object.keys(C).forEach(id => {
     const c = C[id];

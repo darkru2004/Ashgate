@@ -61,6 +61,8 @@
         case 'delayPower': return '징조 하나 +' + e.n + '차례';
         case 'anchor': return '매듭: 다음 섞임/먹힘 1회 무효';
         case 'devour': return e.who === 'all' ? '모든 지기의 버림 맨 위 ' + (e.n || 1) + '장 먹힘' : '지기 1명의 버림 맨 위 ' + (e.n || 1) + '장 먹힘';
+        case 'scramble': return e.who === 'all' ? '모든 지기의 버림 더미 섞음' : '지기 1명의 버림 더미 섞음';
+        case 'reshuffleTurns': return '남은 종을 다시 섞음';
         case 'returnDevoured': return '먹힌 카드 ' + (e.n || 1) + '장 반환';
         default: return e.op;
       }
@@ -221,7 +223,9 @@
       const td = [];
       for (let i = 0; i < n; i++) td.push('M' + i);
       for (let i = 0; i < Math.max(0, slots - n); i++) td.push('W');
-      for (let i = 0; i < ((scn.turnDeck && scn.turnDeck.nemesis) || 2); i++) td.push('N');
+      const tdn = scn.turnDeck && scn.turnDeck.nemesis;                // 숫자(모든 인원) 또는 {인원: 장수}
+      const nCount = (tdn && typeof tdn === 'object' ? tdn[n] : tdn) || 2;
+      for (let i = 0; i < nCount; i++) td.push('N');
       s.turnDeck = shuffle(s, td); s.turnDiscard = [];
 
       s.mages.forEach(function (m, i) { draw(s, i, 5); });
@@ -341,6 +345,20 @@
       if (!cand.length) return;
       const t = cand.length === 1 ? cand[0] : cand[Math.floor(rnd(s) * cand.length)];
       devourFrom(s, t, n);
+    }
+    // 섞음: 버림 더미를 시드 난수로 섞는다 (이 게임에서 섞는 유일한 효과). 매듭이 있으면 1회 무효.
+    function scrambleOne(s, mi) {
+      const m = s.mages[mi];
+      if (m.anchor > 0) { m.anchor--; log(s, who(s, mi) + '의 매듭이 기억의 순서를 붙든다. (섞임 무효)'); return; }
+      if (m.discard.length < 2) return;
+      shuffle(s, m.discard);
+      log(s, who(s, mi) + '의 버림 더미가 뒤섞였다.');
+    }
+    function doScramble(s, e) {
+      if (e.who === 'all') { living(s).forEach(function (k) { if (!s.over) scrambleOne(s, k); }); return; }
+      const cand = living(s).filter(function (k) { return s.mages[k].discard.length >= 2 || s.mages[k].anchor > 0; });
+      if (!cand.length) return;
+      scrambleOne(s, cand.length === 1 ? cand[0] : cand[Math.floor(rnd(s) * cand.length)]);
     }
     function doReturnDevoured(s, e) {
       for (let k = 0; k < (e.n || 1); k++) {
@@ -541,6 +559,10 @@
             log(s, '[' + nm(p.id) + '] 발동이 ' + e.n + '차례 늦춰진다 (남은 ' + p.tokens + ')'); break;
           }
           case 'devour': doDevour(s, e); break;
+          case 'scramble': doScramble(s, e); break;
+          case 'reshuffleTurns':
+            shuffle(s, s.turnDeck); s.peek = null;
+            log(s, '종의 순서가 뒤엉킨다. (남은 종을 다시 섞는다)'); break;
           case 'returnDevoured': doReturnDevoured(s, e); break;
           case 'anchor': if (mi >= 0) { s.mages[mi].anchor += (e.n || 1); log(s, who(s, mi) + '이(가) 매듭을 묶는다.'); } break;
         }

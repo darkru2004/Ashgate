@@ -400,5 +400,94 @@ t('저장·복원 후 이어서 같은 결과 (먹힘 상태 포함)', () => {
   });
 });
 
+console.log('3단계: E3 뒤섞는 자 (섞임)');
+const e3 = (party, seed, opts) => game(party, seed, Object.assign({ nemesis: 'e3' }, opts || {}));
+t('E3 시작: 16장 덱, 문턱 4, 추천 세트에 매듭·도둑의 손버릇', () => {
+  const s = e3([0]);
+  assert.strictEqual(s.nemDeck.length, 16); assert.strictEqual(s.threshold, 4);
+  assert.ok(s.supply.r_knot > 0 && s.supply.s_thief > 0);
+});
+t('섞음(한 명): 버림 더미가 섞이되 장수는 같고, 같은 시드는 같은 결과', () => {
+  const run = () => {
+    const s = e3([0]); const m = main(s, []);
+    m.discard = ['shard', 'spark', 'g_baker', 'g_miner', 's_star', 's_arrow', 'g_coal'];
+    s.turnDeck = ['M0', 'N']; s.nemDeck = ['e3_reverse']; s.nemDiscard = [];
+    eng.act(s, { type: 'endMain' });
+    return m.discard.slice();
+  };
+  const a = run();
+  assert.deepStrictEqual(a, run());
+  const s = e3([0]); const m = main(s, []);
+  const before = ['shard', 'spark', 'g_baker', 'g_miner', 's_star', 's_arrow', 'g_coal'];
+  m.discard = before.slice(); s.turnDeck = ['M0', 'N']; s.nemDeck = ['e3_reverse']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.deepStrictEqual(m.discard.slice().sort(), before.slice().sort());
+});
+t('섞음은 버림 더미가 2장 미만이면 건너뛴다', () => {
+  const s = e3([0]); const m = main(s, []); m.discard = ['g_baker'];
+  s.turnDeck = ['M0', 'N']; s.nemDeck = ['e3_reverse']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.deepStrictEqual(m.discard, ['g_baker']);
+});
+t('매듭: 섞임 1회를 무효로 하고 매듭만 소모', () => {
+  const s = e3([0]); const m = main(s, []); m.anchor = 1;
+  const before = ['shard', 'spark', 'g_baker', 'g_miner', 's_star', 's_arrow', 'g_coal', 'g_smith'];
+  m.discard = before.slice(); s.turnDeck = ['M0', 'N']; s.nemDeck = ['e3_reverse']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.deepStrictEqual(m.discard, before); assert.strictEqual(m.anchor, 0);
+});
+t('망각의 소용돌이(징조): 모든 지기의 버림 더미 섞음 + 성채 -3', () => {
+  const s = e3([0, 1]); main(s, []); s.graveLife = 20; s.hunger = 0;
+  const base = ['shard', 'spark', 'g_baker', 'g_miner', 's_star', 's_arrow', 'g_coal', 'g_smith'];
+  s.mages.forEach(m => m.discard = base.slice());
+  s.powers = [{ uid: 70, id: 'e3_vortex', tokens: 1 }]; s.turnDeck = ['M1', 'N']; s.nemDeck = ['e3_breath']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.ok(s.mages.some(m => m.discard.join() !== base.join()));
+  assert.strictEqual(s.graveLife, 17);
+});
+t('엇갈린 걸음: 남은 종이 다시 섞이고(장수 유지) 다음 종 미리 보기가 지워진다', () => {
+  const s = e3([0, 1]); main(s, []);
+  s.turnDeck = ['M0', 'W', 'N', 'M1', 'N'].slice(); s.nemDeck = ['e3_stagger']; s.nemDiscard = []; s.peek = 'M1';
+  const before = s.turnDeck.slice().sort();
+  s.turnDeck = ['M0', 'W', 'M1', 'N']; s.turnDeck.push('N');      // 맨 끝(N)이 먼저 뽑힌다
+  eng.act(s, { type: 'endMain' });
+  assert.strictEqual(s.peek, null);
+  assert.strictEqual(s.turnDeck.length + s.turnDiscard.length > 0, true);
+});
+t('호각(peekTurn)은 종이 섞이면 무효가 된다', () => {
+  const s = e3([0]); const m = main(s, ['r_whistle']); s.turnDeck = ['M0', 'W', 'N'];
+  ok(play(s, 0)); assert.strictEqual(s.peek, 'N');
+  s.turnDeck = ['M0', 'N']; s.nemDeck = ['e3_stagger']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' }); assert.strictEqual(s.peek, null);
+});
+t('저장·복원 후 이어서 같은 결과 (섞임 포함)', () => {
+  const s = e3([1, 0, 2], 41); const bot = Bot.create(eng, {});
+  for (let i = 0; i < 8 && !s.over; i++) bot.takeTurn(s);
+  const copy = JSON.parse(JSON.stringify(s));
+  for (let i = 0; i < 20 && !s.over; i++) { bot.takeTurn(s); bot.takeTurn(copy); }
+  assert.deepStrictEqual(s, copy);
+});
+t('4인 적 카드 장수(turnDeck.nemesis 맵)를 지원한다', () => {
+  const sc = clone(scn0); sc.turnDeck.nemesis = { 1: 2, 2: 2, 3: 2, 4: 3 };
+  const e = Engine.create(sc);
+  const s4 = e.newGame({ seed: 1, party: [0, 1, 2, 3] }), s1 = e.newGame({ seed: 1, party: [0] });
+  const cnt = s => s.turnDeck.concat(s.turnDiscard).filter(x => x === 'N').length;
+  assert.strictEqual(cnt(s4), 3); assert.strictEqual(cnt(s1), 2);
+});
+[[['seo'], 300], [['rec'], 300], [['tow'], 300], [['car'], 300], [['seo', 'rec'], 200], [['rec', 'tow', 'car'], 200], [['seo', 'rec', 'tow', 'car'], 200]].forEach(c => {
+  t('E3 봇 ' + c[1] + '판 [' + c[0].join('+') + ']: 교착 0, 규칙 위반 행동 0', () => {
+    ['normal', 'hard'].forEach(df => {
+      const r = simAll(c[0], c[1], { nemesis: 'e3', difficulty: df });
+      assert.strictEqual(r.stall, 0, 'stall'); assert.strictEqual(r.rej, 0, 'rejected');
+    });
+  });
+});
+t('세 적 모두 무작위 공급·모든 난이도에서 짧게 돌려도 안전', () => {
+  ['e1', 'e2', 'e3'].forEach(nem => ['easy', 'normal', 'hard', 'despair'].forEach(df => {
+    const r = simAll(['rec', 'car', 'tow'], 40, { nemesis: nem, difficulty: df, supply: 'random' });
+    assert.strictEqual(r.stall, 0); assert.strictEqual(r.rej, 0);
+  }));
+});
+
 console.log('\n' + pass + ' 통과, ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);
