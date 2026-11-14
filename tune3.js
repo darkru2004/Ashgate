@@ -6,14 +6,17 @@ const groups = { 1: ids.map(i => [i]), 2: [[ids[0], ids[1]], [ids[2], ids[3]], [
 const games = +(process.argv[2] || 300), target = 0.675;
 const out = {};
 function rate(n, mult, key) {
-  const c = S.clone(base); c.scaling[n] = Object.assign({}, c.scaling[n]); c.scaling[n][key] = mult;
+  const c = S.clone(base);
+  if (NEM) { const N = c.nemeses[NEM]; N.scaling = N.scaling || {}; N.scaling[n] = Object.assign({}, N.scaling[n]); N.scaling[n][key] = mult; }
+  else { c.scaling[n] = Object.assign({}, c.scaling[n]); c.scaling[n][key] = mult; }
   let w = 0, g = 0;
-  groups[n].forEach(p => { const r = S.runBatch(c, games, 1000, {}, null, p, {}); w += r.wins; g += r.games; });
+  groups[n].forEach(p => { const r = S.runBatch(c, games, 1000, {}, null, p, NEM ? { nemesis: NEM } : {}); w += r.wins; g += r.games; });
   return w / g;
 }
 const key = process.argv[3] || 'nemLife';
+const NEM = process.argv[4] || null;   // 적 id를 주면 그 적 전용 배율(nemeses.<id>.scaling)을 탐색
 [1, 2, 3, 4].forEach(n => {
-  let lo = 0.5, hi = 4.0;
+  let lo = 0.5, hi = 6.0;
   for (let i = 0; i < 9; i++) { const mid = (lo + hi) / 2; if (rate(n, mid, key) > target) lo = mid; else hi = mid; }
   const m = Math.round((lo + hi) / 2 * 100) / 100;
   out[n] = m; console.log(n + '인 ' + key + ' ×' + m + ' → ' + (rate(n, m, key) * 100).toFixed(1) + '%');

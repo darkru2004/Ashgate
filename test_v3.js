@@ -60,7 +60,7 @@ t('1~4명 모든 조합이 시작되고 같은 시드는 같은 상태', () => {
 });
 t('적 선택: e1 / random / 없는 적은 거부', () => {
   assert.strictEqual(game([0], 1, { nemesis: 'e1' }).nem, 'e1');
-  assert.strictEqual(game([0], 1, { nemesis: 'random' }).nem, 'e1');
+  assert.ok(['e1', 'e2'].includes(game([0], 1, { nemesis: 'random' }).nem));
   assert.throws(() => game([0], 1, { nemesis: 'zz' }));
 });
 t('적 덱 16장, 모든 카드가 데이터에 있다', () => {
@@ -311,6 +311,92 @@ t('잊음 봇(aggressive/never)도 오류 없이 끝난다', () => {
   ['aggressive', 'never'].forEach(fm => {
     const r = simAll(['seo', 'rec'], 200, { supply: 'forget' }, { forgetMode: fm });
     assert.strictEqual(r.stall, 0); assert.strictEqual(r.rej, 0);
+  });
+});
+
+console.log('2단계: E2 이름 없는 행렬 (먹힘)');
+const e2 = (party, seed, opts) => game(party, seed, Object.assign({ nemesis: 'e2' }, opts || {}));
+t('E2 시작: 16장 덱, 추천 세트에 누군가의 매듭·도둑의 손버릇, 이름 더미 비어 있음', () => {
+  const s = e2([0]);
+  assert.strictEqual(s.nemDeck.length, 16); assert.deepStrictEqual(s.devoured, []);
+  assert.ok(s.supply.r_knot > 0 && s.supply.s_thief > 0 && !s.supply.r_lamp);
+  assert.strictEqual(game([0]).nem, 'e1'); assert.ok(game([0]).supply.r_lamp > 0);
+});
+t('E2 전용 배율: 같은 인원이라도 E1과 다른 보스 생명', () => {
+  assert.notStrictEqual(e2([0]).nemMax, game([0]).nemMax);
+});
+t('먹힘(전원): 모든 지기의 버림 더미 맨 위 1장이 이름 더미로, 버림이 비면 건너뜀', () => {
+  const s = e2([0, 1]); main(s, []);
+  s.mages[0].discard = ['shard', 'g_miner']; s.mages[1].discard = [];
+  s.hunger = s.threshold - 1; s.graveLife = 20;
+  s.turnDeck = ['M1', 'N']; s.nemDeck = ['e2_tag']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });          // 빈 명찰: 격화 ×2 → 삼킴 (성채 -3, 먹힘)
+  assert.strictEqual(s.graveLife, 17);
+  assert.deepStrictEqual(s.devoured, [{ mage: 0, id: 'g_miner' }]);
+  assert.deepStrictEqual(s.mages[0].discard, ['shard']);
+});
+t('먹힘(한 명): 버림 더미가 있는 지기만 대상, 전부 비면 아무 일도 없다', () => {
+  const s = e2([0, 1]); main(s, []); s.mages[0].discard = []; s.mages[1].discard = ['g_baker'];
+  s.turnDeck = ['M1', 'N']; s.nemDeck = ['e2_call']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.deepStrictEqual(s.devoured, [{ mage: 1, id: 'g_baker' }]);
+  const s2 = e2([0, 1]); main(s2, []); s2.mages.forEach(m => m.discard = []);
+  s2.turnDeck = ['M1', 'N']; s2.nemDeck = ['e2_call']; s2.nemDiscard = [];
+  eng.act(s2, { type: 'endMain' });
+  assert.deepStrictEqual(s2.devoured, []);
+});
+t('매듭: 먹힘 1회를 무효로 하고 매듭만 소모된다', () => {
+  const s = e2([0]); const m = main(s, ['r_knot']); m.discard = ['g_baker', 'shard'];
+  ok(play(s, 0)); assert.strictEqual(m.anchor, 1);
+  s.turnDeck = ['M0', 'N']; s.nemDeck = ['e2_call']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.strictEqual(m.anchor, 0); assert.deepStrictEqual(s.devoured, []);
+  assert.ok(m.discard.indexOf('g_baker') >= 0);
+});
+t('행진(징조): 모든 지기의 버림 더미 맨 위 2장 먹힘', () => {
+  const s = e2([0]); const m = main(s, []); m.discard = ['a', 'b', 'shard', 'spark'].map(x => x.length === 1 ? 'g_coal' : x);
+  s.powers = [{ uid: 70, id: 'e2_march', tokens: 1 }]; s.turnDeck = ['M0', 'N']; s.nemDeck = ['e2_end']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.strictEqual(s.devoured.length, 2);
+});
+t('이름 없는 자를 처치하면 먹힌 카드 1장이 원래 주인의 버림 더미 맨 위로 돌아온다', () => {
+  const s = e2([0, 1]); const m = main(s, []);
+  s.devoured = [{ mage: 1, id: 'g_miner' }, { mage: 0, id: 'g_baker' }];
+  s.minions = [{ uid: 90, id: 'e2_nameless', life: 2 }];
+  m.breaches[0].prepped = 's_arrow'; m.breaches[0].preppedTurn = -1; s.phase = 'cast';
+  ok(eng.act(s, { type: 'cast', breach: 0, targets: [90] }));
+  assert.strictEqual(s.minions.length, 0);
+  assert.strictEqual(s.devoured.length, 1);
+  assert.strictEqual(s.mages[0].discard[s.mages[0].discard.length - 1], 's_arrow');   // 방금 시전한 주문이 맨 위, 돌아온 카드 아래
+  assert.ok(s.mages[0].discard.indexOf('g_baker') >= 0);
+});
+t('먹힌 카드가 없으면 처치해도 아무 일도 없다', () => {
+  const s = e2([0]); const m = main(s, []); s.minions = [{ uid: 90, id: 'e2_nameless', life: 1 }];
+  m.breaches[0].prepped = 'spark'; m.breaches[0].preppedTurn = -1; s.phase = 'cast';
+  ok(eng.act(s, { type: 'cast', breach: 0, targets: [90] })); assert.strictEqual(s.minions.length, 0);
+});
+t('이름을 입은 것: 놓일 때의 생명 = 3 + 이름 더미 장수', () => {
+  const s = e2([0]); main(s, []); s.devoured = [{ mage: 0, id: 'shard' }, { mage: 0, id: 'spark' }];
+  s.turnDeck = ['M0', 'N']; s.nemDeck = ['e2_clad']; s.nemDiscard = [];
+  eng.act(s, { type: 'endMain' });
+  assert.strictEqual(s.minions[0].life, 5);
+});
+t('이름 더미는 판이 끝나면 사라진다 (새 게임은 항상 비어 있음)', () => {
+  assert.deepStrictEqual(e2([0], 3).devoured, []);
+});
+t('저장·복원 후 이어서 같은 결과 (먹힘 상태 포함)', () => {
+  const s = e2([1, 0], 31); const bot = Bot.create(eng, {});
+  for (let i = 0; i < 8 && !s.over; i++) bot.takeTurn(s);
+  const copy = JSON.parse(JSON.stringify(s));
+  for (let i = 0; i < 20 && !s.over; i++) { bot.takeTurn(s); bot.takeTurn(copy); }
+  assert.deepStrictEqual(s, copy);
+});
+[[['seo'], 300], [['rec'], 300], [['tow'], 300], [['car'], 300], [['seo', 'rec'], 200], [['rec', 'tow', 'car'], 200], [['seo', 'rec', 'tow', 'car'], 200]].forEach(c => {
+  t('E2 봇 ' + c[1] + '판 [' + c[0].join('+') + ']: 교착 0, 규칙 위반 행동 0', () => {
+    ['normal', 'hard'].forEach(df => {
+      const r = simAll(c[0], c[1], { nemesis: 'e2', difficulty: df });
+      assert.strictEqual(r.stall, 0, 'stall'); assert.strictEqual(r.rej, 0, 'rejected');
+    });
   });
 });
 

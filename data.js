@@ -144,6 +144,31 @@
         e1_wolf: { id: 'e1_wolf', kind: 'minion', name: '문틈 늑대',   life: 4, each: [E('hitMage', 1)] },
         e1_bell: { id: 'e1_bell', kind: 'minion', name: '종지기',      life: 5, each: [E('unleash', 1)] }
       }
+    },
+    e2: {
+      id: 'e2', name: '이름 없는 행렬', life: 75,
+      recommended: 'e2',
+      // 이 적 전용 인원별 배율 (전역 scaling보다 우선)
+      scaling: { 1: { nemLife: 1.3 }, 2: { nemLife: 1.4 }, 3: { nemLife: 1.0 }, 4: { nemLife: 2.15 } },
+      epitaph: { win: '행렬이 걸음을 멈춘다. 이름 없는 얼굴들이 하나씩 흩어진다.', lose: '이름이 하나씩 불린다. 대답하는 사람은 없다.', after: '돌아오지 않은 이름들은 아직 문 아래에 쌓여 있다.' },
+      // 삼킴: 성채 -3, 모든 지기의 버림 더미 맨 위 1장이 먹힌다(이번 판에서 제거, 이름 더미로)
+      unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3), E('devour', 1, { who: 'all' })] },
+      targeting: 'random',
+      deck: {
+        e2_step: 3, e2_call: 2, e2_end: 2, e2_tag: 1,
+        e2_march: 2, e2_hand: 1,
+        e2_nameless: 3, e2_clad: 2
+      },
+      cards: {
+        e2_step:  { id: 'e2_step',  kind: 'attack', name: '낯선 발걸음', effects: [E('hitMage', 2), E('unleash', 1)] },
+        e2_call:  { id: 'e2_call',  kind: 'attack', name: '이름 부르기', effects: [E('devour', 1, { who: 'one' })] },
+        e2_end:   { id: 'e2_end',   kind: 'attack', name: '행렬의 끝',   effects: [E('hitGrave', 4)] },
+        e2_tag:   { id: 'e2_tag',   kind: 'attack', name: '빈 명찰',     effects: [E('unleash', 2)] },
+        e2_march: { id: 'e2_march', kind: 'power', name: '행진', countdown: 3, disarm: 5, effects: [E('devour', 2, { who: 'all' })] },
+        e2_hand:  { id: 'e2_hand',  kind: 'power', name: '이름을 새기는 손', countdown: 2, disarm: 4, effects: [E('hitGrave', 4), E('unleash', 1)] },
+        e2_nameless: { id: 'e2_nameless', kind: 'minion', name: '이름 없는 자', life: 4, each: [E('hitGrave', 1)], onDeath: [E('returnDevoured', 1)] },
+        e2_clad:     { id: 'e2_clad',     kind: 'minion', name: '이름을 입은 것', life: 3, lifePlus: 'devoured', each: [E('hitMage', 2)] }
+      }
     }
   };
 
@@ -220,6 +245,12 @@
       spells: ['s_arrow', 's_rage', 's_prayer', 's_star']
     },
     supplySets: {
+      // E2(먹힘) 대응: 산파의 등잔→누군가의 매듭, 수녀의 잿빛 기도→도둑의 손버릇
+      e2: {
+        gems: ['g_smith', 'g_pilgrim', 'g_baker'],
+        relics: ['r_thread', 'r_knot'],
+        spells: ['s_arrow', 's_rage', 's_thief', 's_star']
+      },
       // 잊음 카드가 많은 세트 (잊음 비용 검증용이자 "압축형" 플레이용)
       forget: {
         gems: ['g_drifter', 'g_smith', 'g_baker'],
@@ -234,7 +265,7 @@
     // 새 시나리오를 만들 때 이 항목만 채우면 밸런스 도구가 목표 승률에 맞춰 준다.
     balance: {
       target: [0.60, 0.75],
-      knobs: ['nemeses.e1.life', 'gravehold.life'],
+      knobs: ['nemeses.e1.life', 'nemeses.e2.life', 'gravehold.life'],
       games: 3000
     }
   };

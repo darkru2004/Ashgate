@@ -47,15 +47,21 @@
       });
       return best >= 0 ? best : undefined;
     }
-    function threat(m) {
+    function threat(m, s) {
       const e = NC[m.id].each;
-      return sum(e, 'hitGrave') + sum(e, 'hitMage') * 1.5 + sum(e, 'unleash') * 2;
+      // 처치하면 먹힌 카드를 돌려주는 잿것은 먹힌 카드가 있을 때 우선 처치
+      const bonus = NC[m.id].onDeath && s && s.devoured.length ? 3 : 0;
+      return sum(e, 'hitGrave') + sum(e, 'hitMage') * 1.5 + sum(e, 'unleash') * 2 + bonus;
+    }
+    // 이 적이 카드를 먹거나 섞는가 (매듭의 값어치 판단)
+    function attacksDeck(s) {
+      return /"devour"|"scramble"/.test(JSON.stringify(eng.nem(s)));
     }
 
     // 피해 한 번 한 번의 대상을 정한다
     function pickTargets(s, instances) {
       const targets = [];
-      const minions = s.minions.map(function (m) { return { uid: m.uid, life: m.life, threat: threat(m) }; });
+      const minions = s.minions.map(function (m) { return { uid: m.uid, life: m.life, threat: threat(m, s) }; });
       let nemLeft = s.nemLife;
       instances.forEach(function (n) {
         if (nemLeft <= n) { targets.push('N'); nemLeft -= n; return; }
@@ -77,6 +83,7 @@
       let extra = sum(c.effects, 'healMage') * (multi ? 2 : 0.5) + sum(c.effects, 'recall') * 4 + sum(c.effects, 'focusAlly') * (multi ? 5 : 3)
         + sum(c.effects, 'dmgMinion') * (s.minions.length ? 3 : 1) + sum(c.effects, 'peekTurn') * 1 + sum(c.effects, 'delayPower') * 3
         - sum(c.effects, 'hitSelf') * 3 + (sum(c.effects, 'hunger') < 0 ? 3 : 0);
+      if (sum(c.effects, 'anchor')) extra += attacksDeck(s) ? 14 : -4;
       // 잊음: 굶주림 +1이 따라붙는다
       const fg = forgets(c).filter(function (e) { return !e.optional; }).length;
       if (cfg.forgetMode === 'never') extra -= fg * 100;

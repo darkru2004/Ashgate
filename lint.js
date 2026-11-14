@@ -6,11 +6,12 @@ function lint(scn) {
   const NEMS = scn.nemeses || { default: scn.nemesis };
   const C = scn.cards, NC = {};
   Object.keys(NEMS).forEach(k => Object.assign(NC, NEMS[k].cards));
-  const ops = new Set(['ember', 'dmg', 'heal', 'healMage', 'charge', 'chargeReset', 'draw', 'hitGrave', 'hitMage', 'hitSelf', 'hunger', 'unleash', 'forget', 'recall', 'focusAlly', 'openAlly', 'maxLife', 'dmgMinion', 'dmgAll', 'peekTurn', 'delayPower', 'anchor']);
+  const ops = new Set(['ember', 'dmg', 'heal', 'healMage', 'charge', 'chargeReset', 'draw', 'hitGrave', 'hitMage', 'hitSelf', 'hunger', 'unleash', 'forget', 'recall', 'focusAlly', 'openAlly', 'maxLife', 'dmgMinion', 'dmgAll', 'peekTurn', 'delayPower', 'anchor', 'devour', 'returnDevoured']);
   const MAGES = scn.mages || [scn.mage];
   const checkEff = (where, eff) => (eff || []).forEach(e => { if (!ops.has(e.op)) errs.push(where + ': 알 수 없는 효과 ' + e.op);
     if (e.op !== 'chargeReset' && !(e.n > 0 || (e.op === 'hunger' && e.n < 0))) errs.push(where + ': 수치 오류');
     if (e.op === 'forget' && !['hand', 'deckTop', 'discardTop'].includes(e.from)) errs.push(where + ': forget.from 값 오류');
+    if (e.op === 'devour' && !['one', 'all'].includes(e.who)) errs.push(where + ': devour.who 값 오류');
     if (e.op === 'recall' && !['top', 'hand'].includes(e.to)) errs.push(where + ': recall.to 값 오류'); });
   Object.keys(C).forEach(id => {
     const c = C[id];
@@ -52,10 +53,13 @@ function lint(scn) {
     if (c.onDraw) checkEff(id + '.onDraw', c.onDraw);
     if (c.kind === 'attack') checkEff(id, c.effects);
     if (c.kind === 'power') { checkEff(id, c.effects); if (!(c.countdown > 0) || !(c.disarm > 0)) errs.push(id + ': countdown/disarm 필요'); }
+    if (c.onDeath) checkEff(id + '.onDeath', c.onDeath);
+    if (c.lifePlus && c.lifePlus !== 'devoured') errs.push(id + ': lifePlus 값 오류');
     if (c.kind === 'minion') { checkEff(id, c.each); if (!(c.life > 0)) errs.push(id + ': life 필요'); }
     if (!['attack', 'power', 'minion'].includes(c.kind)) errs.push(id + ': kind 오류');
   });
   Object.keys(NEMS).forEach(k => {
+    if (NEMS[k].recommended && !(scn.supplySets || {})[NEMS[k].recommended]) errs.push(k + ': recommended 세트가 supplySets에 없다');
     const u = NEMS[k].unleash;
     if (u) { if (!(u.threshold > 0)) errs.push(k + ': unleash.threshold 필요'); checkEff(k + '.unleash.strike', u.strike); }
     if (NEMS[k].targeting && !['random', 'lowest', 'last'].includes(NEMS[k].targeting)) errs.push(k + ': targeting 값 오류');

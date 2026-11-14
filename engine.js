@@ -60,6 +60,8 @@
         case 'peekTurn': return '다음 종 미리 보기';
         case 'delayPower': return '징조 하나 +' + e.n + '차례';
         case 'anchor': return '매듭: 다음 섞임/먹힘 1회 무효';
+        case 'devour': return e.who === 'all' ? '모든 지기의 버림 맨 위 ' + (e.n || 1) + '장 먹힘' : '지기 1명의 버림 맨 위 ' + (e.n || 1) + '장 먹힘';
+        case 'returnDevoured': return '먹힌 카드 ' + (e.n || 1) + '장 반환';
         default: return e.op;
       }
     }).join(', ');
@@ -125,8 +127,9 @@
     function resolveSupply(s, opt, nemId) {
       if (opt && typeof opt === 'object') return opt;
       if (opt === 'random') return randomSupply(s, nemId);
-      if (opt && scn.supplySets && scn.supplySets[opt]) return scn.supplySets[opt];
-      return scn.supply;                              // 'recommended' / 미지정
+      if (opt && opt !== 'recommended' && scn.supplySets && scn.supplySets[opt]) return scn.supplySets[opt];
+      const rec = NEMS[nemId] && NEMS[nemId].recommended;   // 적마다 추천 세트가 다를 수 있다 (예: 먹힘/섞임 대응)
+      return (rec && scn.supplySets && scn.supplySets[rec]) || scn.supply;
     }
 
     // ---------- 새 게임 ----------
@@ -148,7 +151,7 @@
       const s = {
         v: 3, scn: scn.id, rng: seed | 0, uid: 1, turnNo: 0, nemTurns: 0,
         phase: 'init', active: -1, lastActive: -1, over: null, reason: '', log: [],
-        hunger: 0, legacy: lg, seats: seats, peek: null
+        hunger: 0, legacy: lg, seats: seats, peek: null, devoured: []
       };
 
       // 적 / 난이도
@@ -192,7 +195,7 @@
         };
       });
 
-      const sc = (scn.scaling && scn.scaling[n]) || {};
+      const sc = Object.assign({}, (scn.scaling && scn.scaling[n]) || {}, (N.scaling && N.scaling[n]) || {});   // 적별 배율이 있으면 우선
       s.graveMax = Math.round((scn.gravehold.life + (lg.graveBonus || 0)) * (sc.graveLife || 1) * (diff.graveLife || 1));
       s.graveLife = s.graveMax;
       s.supply = {};
@@ -261,7 +264,11 @@
           const m = s.minions[mi];
           m.life -= n;
           log(s, nm(m.id) + '에게 피해 ' + n + (m.life <= 0 ? ' — 쓰러졌다.' : ' (남은 ' + m.life + ')'));
-          if (m.life <= 0) { s.minions.splice(mi, 1); s.nemDiscard.push(m.id); }
+          if (m.life <= 0) {
+            s.minions.splice(mi, 1); s.nemDiscard.push(m.id);
+            const od = NC[m.id].onDeath;                 // 처치 효과 (예: 먹힌 카드 반환)
+            if (od) applyEffects(s, od, null);
+          }
           return;
         }
       }
@@ -311,6 +318,36 @@
         s.hunger -= s.threshold;
         log(s, nem(s).name + '의 굶주림이 폭발한다!');
         applyEffects(s, (nem(s).unleash && nem(s).unleash.strike) || [], null);
+      }
+    }
+
+    // 먹힘: 지기의 버림 더미 맨 위 n장이 이번 판에서 제거되어 이름 더미(s.devoured)에 쌓인다. 잊음과 달리 굶주림 비용은 없다.
+    // 매듭(anchor)이 있으면 1회 무효로 만들고 매듭만 소모한다.
+    function devourFrom(s, mi, n) {
+      const m = s.mages[mi];
+      if (m.anchor > 0) { m.anchor--; log(s, who(s, mi) + '의 매듭이 이름을 붙든다. (먹힘 무효)'); return; }
+      for (let k = 0; k < n; k++) {
+        if (!m.discard.length) break;
+        const card = m.discard.pop();
+        s.devoured.push({ mage: mi, id: card });
+        log(s, who(s, mi) + '의 「' + nm(card) + '」이(가) 이름 더미로 먹혔다.');
+      }
+    }
+    function doDevour(s, e) {
+      const n = e.n || 1;
+      if (e.who === 'all') { living(s).forEach(function (k) { if (!s.over) devourFrom(s, k, n); }); return; }
+      // 한 명: 버림 더미에 카드가 있는 일행 중에서 (없으면 아무도 먹히지 않는다)
+      const cand = living(s).filter(function (k) { return s.mages[k].discard.length || s.mages[k].anchor > 0; });
+      if (!cand.length) return;
+      const t = cand.length === 1 ? cand[0] : cand[Math.floor(rnd(s) * cand.length)];
+      devourFrom(s, t, n);
+    }
+    function doReturnDevoured(s, e) {
+      for (let k = 0; k < (e.n || 1); k++) {
+        if (!s.devoured.length) return;
+        const d = s.devoured.pop();                    // 가장 최근에 먹힌 카드부터 돌려준다
+        s.mages[d.mage].discard.push(d.id);
+        log(s, '「' + nm(d.id) + '」이(가) ' + who(s, d.mage) + '에게 돌아왔다. (버림 더미 맨 위)');
       }
     }
 
@@ -503,6 +540,8 @@
             p.tokens += e.n;
             log(s, '[' + nm(p.id) + '] 발동이 ' + e.n + '차례 늦춰진다 (남은 ' + p.tokens + ')'); break;
           }
+          case 'devour': doDevour(s, e); break;
+          case 'returnDevoured': doReturnDevoured(s, e); break;
           case 'anchor': if (mi >= 0) { s.mages[mi].anchor += (e.n || 1); log(s, who(s, mi) + '이(가) 매듭을 묶는다.'); } break;
         }
       }
@@ -595,8 +634,9 @@
         s.powers.push({ uid: s.uid++, id: id, tokens: d.countdown });
         log(s, '「' + d.name + '」 — ' + d.countdown + '번의 적 차례 뒤 발동');
       } else if (d.kind === 'minion') {
-        s.minions.push({ uid: s.uid++, id: id, life: d.life });
-        log(s, '「' + d.name + '」 등장 (생명 ' + d.life + ')');
+        var lf = d.life + (d.lifePlus === 'devoured' ? s.devoured.length : 0);   // 이름 더미 장수만큼 단단하다
+        s.minions.push({ uid: s.uid++, id: id, life: lf });
+        log(s, '「' + d.name + '」 등장 (생명 ' + lf + ')');
       }
       if (!s.over && d.onDraw) applyEffects(s, d.onDraw, null);
     }
