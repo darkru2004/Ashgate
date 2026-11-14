@@ -92,6 +92,7 @@ t('무작위 공급처: 9더미, 비용 3 이하 보석·4 이하 주문이 반�
     assert.ok(p.gems.some(id => scn0.cards[id].cost <= 3), 'seed ' + seed);
     assert.ok(p.spells.some(id => scn0.cards[id].cost <= 4), 'seed ' + seed);
     assert.strictEqual(new Set(p.gems.concat(p.relics, p.spells)).size, 9);
+    p.gems.concat(p.relics, p.spells).forEach(id => assert.ok(scn0.cards[id].cost > 0 && !scn0.cards[id].starter, '시작 카드가 공급처에: ' + id));
   }
   assert.deepStrictEqual(game([0], 9, { supply: 'random' }).supplyPiles, game([0], 9, { supply: 'random' }).supplyPiles);
 });

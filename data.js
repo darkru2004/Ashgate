@@ -64,6 +64,8 @@
     // 레거시로만 들어오는 카드 (공급처에는 없다)
     { id: 'sera_lamp', name: '세라의 등불', type: 'relic', cost: 0, legacyOnly: true, effects: [E('ember', 2), E('healMage', 1)] }
   ].forEach(c => { cards[c.id] = c; });
+  // 지기 고유 시작 카드는 공급처에 나오지 않는다
+  ['seo_flint', 'rec_ledger', 'tow_torch', 'car_knife'].forEach(id => { cards[id].starter = true; });
 
   // ---- 지기 4명 ----
   const std = (open1, extra) => [
@@ -74,7 +76,7 @@
   ];
   const mages = [
     {
-      id: 'seo', name: '세오', life: 10, chargeOnCast: 1,
+      id: 'seo', name: '세오', role: '균형 잡힌 피해. 대가로 덱 맨 위 기억을 잊는다.', life: 10, chargeOnCast: 1,
       startingDeck: { shard: 6, spark: 3, seo_flint: 1 },
       ability: { name: '불씨 폭주', cost: 4, effects: [E('dmg', 5)], text: '열 4: 피해 5' },
       breaches: std(true, [
@@ -85,7 +87,7 @@
       bot: {}
     },
     {
-      id: 'rec', name: '기록관', life: 9, chargeOnCast: 1,
+      id: 'rec', name: '기록관', role: '기억줄(덱 순서) 조작·동료 지원. 대가로 문이 굶주린다.', life: 9, chargeOnCast: 1,
       startingDeck: { shard: 6, spark: 3, rec_ledger: 1 },
       ability: { name: '이름 부르기', cost: 5, effects: [E('recall', 1, { to: 'hand', who: 'ally' }), E('draw', 1, { to: 'ally' })], text: '열 5: 동료가 버림 더미에서 1장을 손으로, 카드 1장 뽑기 (동료가 없으면 자신)' },
       breaches: std(true, [
@@ -96,7 +98,7 @@
       bot: {}
     },
     {
-      id: 'tow', name: '망대지기', life: 12, chargeOnCast: 1,
+      id: 'tow', name: '망대지기', role: '성채 방어·잿것 정리. 대가로 몸(최대 생명)이 깎인다.', life: 12, chargeOnCast: 1,
       startingDeck: { shard: 6, spark: 3, tow_torch: 1 },
       ability: { name: '성벽 걷기', cost: 5, effects: [E('heal', 5), E('dmgMinion', 3)], text: '열 5: 성채 +5, 잿것 하나에 피해 3' },
       breaches: std(true, [
@@ -107,7 +109,7 @@
       bot: { healBelow: 0.6 }
     },
     {
-      id: 'car', name: '새김꾼', life: 9, chargeOnCast: 1, allClosed: true,
+      id: 'car', name: '새김꾼', role: '동료의 새김을 열어 준다. 자기 새김은 모두 닫힌 채 시작.', life: 9, chargeOnCast: 1, allClosed: true,
       startingDeck: { shard: 7, spark: 2, car_knife: 1 },
       ability: { name: '칼끝', cost: 4, effects: [E('openAlly', 1)], text: '열 4: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신)' },
       breaches: [
@@ -123,7 +125,7 @@
   // ---- 적 ----
   const nemeses = {
     e1: {
-      id: 'e1', name: '굶주린 문', life: 60,
+      id: 'e1', name: '굶주린 문', life: 60, blurb: '입문용. 들숨(격화)이 쌓여 문턱에 닿으면 성채를 삼킨다.',
       epitaph: { win: '문이 닫혔다. 연기가 멎는다.', lose: '등불이 하나씩 꺼진다. 벨란은 조용해졌다.', after: '닫힌 문 아래에서는 아직 무언가 숨을 고른다.' },
       // 굶주림: 격화(unleash)가 발동할 때마다 +step, threshold에 닿으면 삼킴(strike)
       unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3)] },
@@ -146,7 +148,7 @@
       }
     },
     e2: {
-      id: 'e2', name: '이름 없는 행렬', life: 75,
+      id: 'e2', name: '이름 없는 행렬', life: 75, blurb: '삼킬 때 모두의 버림 더미 맨 위 카드를 먹는다. 이름 없는 자를 처치하면 돌려받는다.',
       recommended: 'e2',
       // 이 적 전용 인원별 배율 (전역 scaling보다 우선)
       scaling: { 1: { nemLife: 1.3 }, 2: { nemLife: 1.4 }, 3: { nemLife: 1.0 }, 4: { nemLife: 2.15 } },
@@ -171,7 +173,7 @@
       }
     },
     e3: {
-      id: 'e3', name: '뒤섞는 자', life: 80,
+      id: 'e3', name: '뒤섞는 자', life: 80, blurb: '삼킬 때 한 명의 버림 더미를 섞는다. 종(차례 순서)도 뒤엉킨다.',
       recommended: 'e3',
       scaling: { 1: { nemLife: 1.0 }, 2: { nemLife: 1.65 }, 3: { nemLife: 1.3 }, 4: { nemLife: 1.8, graveLife: 0.68 } },
       epitaph: { win: '말이 제 순서를 찾는다. 뒤섞는 자는 더 이상 말하지 못한다.', lose: '기억을, 너의, 내가, 정리해 주마. 아무도 제 이름을 기억하지 못한다.', after: '순서를 되찾은 기억은 아직 어딘가 한 줄씩 어긋나 있다.' },

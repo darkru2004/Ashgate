@@ -80,6 +80,7 @@
     const nm = function (id) { const d = def(id); return d ? d.name : id; };
 
     function log(s, msg) {
+      s.logN = (s.logN || 0) + 1;            // 지금까지 쌓인 로그 줄 수 (앞부분이 잘려도 UI가 새 줄을 셀 수 있게)
       s.log.push(msg);
       if (s.log.length > 300) s.log.splice(0, s.log.length - 300);
     }
@@ -256,7 +257,7 @@
       if (s.over) return;
       if (s.nemLife <= 0) { s.nemLife = 0; s.over = 'win'; s.reason = nem(s).name + '이(가) 쓰러졌다.'; }
       else if (s.graveLife <= 0) { s.graveLife = 0; s.over = 'lose'; s.reason = '성채가 무너졌다.'; }
-      else if (!living(s).length) { s.over = 'lose'; s.reason = s.mages.length === 1 ? '술사가 쓰러졌다.' : '모든 술사가 쓰러졌다.'; }
+      else if (!living(s).length) { s.over = 'lose'; s.reason = s.mages.length === 1 ? '지기가 쓰러졌다.' : '모든 지기가 쓰러졌다.'; }
       if (s.over) { s.phase = 'over'; log(s, '■ ' + s.reason); }
     }
 
@@ -619,7 +620,7 @@
     }
     function nemesisTurn(s) {
       s.nemTurns++; s.active = -1;
-      log(s, '── 적의 차례 ──');
+      log(s, '── 적의 차례 (' + nem(s).name + ') ──');
       // 1) 메인 단계: 하수인과 힘을 놓인 순서(오래된 것부터)대로 처리
       const items = [];
       s.powers.forEach(function (p) { items.push({ k: 'p', o: p }); });
@@ -632,7 +633,7 @@
           if (s.powers.indexOf(o) < 0) continue;
           o.tokens--;
           if (o.tokens <= 0) {
-            log(s, '[' + nm(o.id) + '] 발동!');
+            log(s, '징조 [' + nm(o.id) + '] 발동!');
             s.powers.splice(s.powers.indexOf(o), 1); s.nemDiscard.push(o.id);
             applyEffects(s, NC[o.id].effects, null);
           } else log(s, '[' + nm(o.id) + '] 남은 ' + o.tokens);
@@ -654,11 +655,11 @@
         applyEffects(s, d.effects, null);
       } else if (d.kind === 'power') {
         s.powers.push({ uid: s.uid++, id: id, tokens: d.countdown });
-        log(s, '「' + d.name + '」 — ' + d.countdown + '번의 적 차례 뒤 발동');
+        log(s, '「' + d.name + '」 징조 — ' + d.countdown + '번의 적 차례 뒤 발동');
       } else if (d.kind === 'minion') {
         var lf = d.life + (d.lifePlus === 'devoured' ? s.devoured.length : 0);   // 이름 더미 장수만큼 단단하다
         s.minions.push({ uid: s.uid++, id: id, life: lf });
-        log(s, '「' + d.name + '」 등장 (생명 ' + lf + ')');
+        log(s, '「' + d.name + '」 잿것 등장 (생명 ' + lf + ')');
       }
       if (!s.over && d.onDraw) applyEffects(s, d.onDraw, null);
     }
@@ -667,11 +668,11 @@
     function validate(s, a) {
       if (s.over) return '게임이 끝났다.';
       if (s.phase === 'wild') {
-        if (a.type !== 'pickMage') return '먼저 움직일 술사를 골라야 한다.';
-        if (!s.mages[a.mage] || s.mages[a.mage].exhausted) return '고를 수 없는 술사다.';
+        if (a.type !== 'pickMage') return '먼저 움직일 지기를 골라야 한다.';
+        if (!s.mages[a.mage] || s.mages[a.mage].exhausted) return '고를 수 없는 지기다.';
         return null;
       }
-      if (a.type === 'pickMage') return '지금은 술사를 고르는 단계가 아니다.';
+      if (a.type === 'pickMage') return '지금은 지기를 고르는 단계가 아니다.';
       const m = cur(s);
       if (!m) return '지금은 일행의 차례가 아니다.';
       const MD = MAGES[m.di];
@@ -680,11 +681,11 @@
       switch (a.type) {
         case 'cast':
           if (s.phase !== 'cast') return '시전 단계가 아니다.';
-          if (castables(s).indexOf(a.breach) < 0) return '시전할 수 없는 균열이다.';
+          if (castables(s).indexOf(a.breach) < 0) return '시전할 수 없는 새김이다.';
           return null;
         case 'endCast':
           if (s.phase !== 'cast') return '시전 단계가 아니다.';
-          if (castables(s).some(function (i) { return !m.breaches[i].open; })) return '닫힌 균열의 주문은 반드시 시전해야 한다.';
+          if (castables(s).some(function (i) { return !m.breaches[i].open; })) return '닫힌 새김의 주문은 반드시 시전해야 한다.';
           return null;
         case 'play': {
           if (!main) return '주 단계가 아니다.';
@@ -702,14 +703,14 @@
         case 'focus': {
           if (!main) return '주 단계가 아니다.';
           const b = m.breaches[a.breach], d = MD.breaches[a.breach];
-          if (!b || b.open) return '닫힌 균열만 집중할 수 있다.';
+          if (!b || b.open) return '닫힌 새김에만 덧그을 수 있다.';
           if (m.ember < d.focusCost) return '불씨가 부족하다.';
           return null;
         }
         case 'open': {
           if (!main) return '주 단계가 아니다.';
           const b = m.breaches[a.breach];
-          if (!b || b.open) return '닫힌 균열만 열 수 있다.';
+          if (!b || b.open) return '닫힌 새김만 열 수 있다.';
           if (m.ember < openCost(s, a.breach)) return '불씨가 부족하다.';
           return null;
         }
@@ -718,9 +719,9 @@
           const c = m.hand[a.idx] && def(m.hand[a.idx]);
           const b = m.breaches[a.breach];
           if (!c || c.type !== 'spell') return '주문 카드가 아니다.';
-          if (!b) return '없는 균열이다.';
+          if (!b) return '없는 새김이다.';
           if (b.prepped) return '이미 주문이 준비되어 있다.';
-          if (!b.open && b.focusedTurn !== s.turnNo) return '닫힌 균열은 이번 차례에 집중해야 준비할 수 있다.';
+          if (!b.open && b.focusedTurn !== s.turnNo) return '닫힌 새김은 이번 차례에 덧그어야 주문을 준비할 수 있다.';
           return null;
         }
         case 'disarm': {
@@ -732,7 +733,7 @@
         }
         case 'ability':
           if (!main) return '주 단계가 아니다.';
-          if (m.charge < MD.ability.cost) return '충전이 부족하다.';
+          if (m.charge < MD.ability.cost) return '열이 부족하다.';
           return null;
         case 'endMain':
           if (!main) return '주 단계가 아니다.';
@@ -814,7 +815,7 @@
           const p = s.powers[a.idx];
           m.ember -= NC[p.id].disarm;
           s.powers.splice(a.idx, 1); s.nemDiscard.push(p.id);
-          log(s, '[' + nm(p.id) + '] 해제');
+          log(s, '징조 [' + nm(p.id) + '] 해제');
           break;
         }
         case 'ability': {

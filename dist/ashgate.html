@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14110f">
+<title>재의 문</title>
+<style>
+:root{
+  --bg:#14110f; --panel:#1d1916; --panel2:#262019; --line:#3a312a; --text:#e9e1d6; --dim:#9a8f82;
+  --ember:#e8863a; --ember2:#ffb561; --grave:#7fb4a6; --mage:#c98fd4; --boss:#d9564a;
+  --gem:#d9a441; --relic:#5fb0b7; --spell:#d9564a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+#app{max-width:1100px;margin:0 auto;padding:10px 10px 60px}
+h1,h2,h3{margin:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.topbar .t{font-weight:700;letter-spacing:.02em}
+.topbar .t small{color:var(--dim);font-weight:400;margin-left:6px;white-space:nowrap}
+.topbar .row{flex-shrink:0;flex-wrap:nowrap}
+@media(max-width:560px){.topbar .t{font-size:14px}.topbar .t small{display:block;margin:0}}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px}
+.btn:hover:not(:disabled){border-color:var(--ember)}
+.btn.primary{background:var(--ember);border-color:var(--ember);color:#1a0f06;font-weight:700}
+.btn.primary:hover:not(:disabled){background:var(--ember2)}
+.btn.sm{padding:4px 8px;font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+.dim{color:var(--dim)}
+
+/* 시작/결과 화면 */
+.center{max-width:560px;margin:8vh auto 0;text-align:center}
+.center h1{font-size:34px;letter-spacing:.08em;color:var(--ember2)}
+.center .sub{color:var(--dim);margin:6px 0 22px}
+.center .col{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.story{text-align:left;margin:18px 0;display:flex;flex-direction:column;gap:12px}
+.story p{margin:0}
+.choice{display:flex;flex-direction:column;gap:10px;margin-top:14px;text-align:left}
+.choice .btn{padding:12px 14px;text-align:left}
+.legacybox{border:1px dashed var(--ember);border-radius:10px;padding:10px 12px;margin-top:12px;text-align:left}
+.legacybox li{margin:4px 0}
+
+/* 상태 */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:8px;margin-bottom:8px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.stat label{display:flex;justify-content:space-between;font-size:12px;color:var(--dim)}
+.stat b{font-size:17px}
+.bar{height:7px;background:#0e0c0a;border-radius:4px;overflow:hidden;margin:4px 0 2px}
+.bar i{display:block;height:100%}
+.boss .bar i{background:var(--boss)} .grave .bar i{background:var(--grave)} .mage .bar i{background:var(--mage)}
+.pips{letter-spacing:3px;color:var(--ember2);font-size:15px}
+.phase{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px}
+.phase .ember{font-size:20px;color:var(--ember2);font-weight:800}
+.hint{color:var(--dim);font-size:13px;margin:0 2px 8px}
+
+/* 레이아웃 */
+.grid{display:grid;grid-template-columns:1fr;gap:10px}
+.side{display:contents}
+.colA{order:1}.colB{order:2}.colC{order:3}
+@media(min-width:900px){.grid{grid-template-columns:3fr 2fr;align-items:start}.side{display:block}.colA,.colB,.colC{order:0}}
+.actionbar{position:sticky;bottom:0;margin-top:6px;padding:10px 0 8px;background:linear-gradient(rgba(20,17,15,0),var(--bg) 35%);z-index:5}
+.actionbar .btn{width:100%;padding:12px}
+.sect{margin-bottom:10px}
+.sect h3{font-size:13px;color:var(--dim);font-weight:600;margin:0 0 6px;letter-spacing:.04em}
+
+/* 카드 */
+.cards{display:flex;flex-wrap:wrap;gap:8px}
+.card{position:relative;width:118px;min-height:104px;text-align:left;background:var(--panel2);border:1px solid var(--line);border-left-width:4px;border-radius:9px;padding:7px 8px 6px;display:flex;flex-direction:column;gap:2px}
+.card .nm{font-weight:700;font-size:14px;padding-right:20px}
+.card .tp{font-size:11px;color:var(--dim)}
+.card .ef{font-size:12.5px;color:#d8cfc2;margin-top:auto}
+.card .cost{position:absolute;top:5px;right:6px;width:20px;height:20px;border-radius:50%;background:#0e0c0a;border:1px solid var(--line);font-size:12px;display:grid;place-items:center;color:var(--ember2)}
+.card.gem{border-left-color:var(--gem)} .card.relic{border-left-color:var(--relic)} .card.spell{border-left-color:var(--spell)}
+.card:hover:not(:disabled){border-color:var(--ember2)}
+.card.sel{outline:2px solid var(--ember2)}
+.card.out{opacity:.35}
+
+/* 균열 */
+.breaches{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+.breach{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:5px;min-height:128px}
+.breach.open{border-color:#7a5a3a;background:linear-gradient(#241b14,#1d1916)}
+.breach.target{outline:2px dashed var(--ember2);cursor:pointer}
+.breach .h{display:flex;justify-content:space-between;font-weight:700}
+.breach .bn{font-size:11.5px;color:var(--dim)}
+.breach .pp{background:#2d1f1b;border:1px solid #5a3330;border-radius:7px;padding:5px 7px;font-size:13px}
+.breach .pp small{display:block;color:var(--dim)}
+.breach .em{color:var(--dim);font-size:13px;border:1px dashed var(--line);border-radius:7px;padding:5px 7px}
+.breach .acts{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto}
+
+/* 적 */
+.enemy{display:flex;flex-direction:column;gap:8px}
+.bossbox{border:1px solid #5a3330;background:linear-gradient(#2a1714,#1d1916);border-radius:10px;padding:9px 11px}
+.bossbox .nm{font-weight:800;color:var(--boss);font-size:16px}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:99px;border:1px solid var(--line);color:var(--dim);margin-right:4px}
+.foe{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 9px;display:flex;gap:8px;align-items:center}
+.foe .tx{flex:1}
+.foe .nm{font-weight:700}
+.foe small{color:var(--dim);display:block}
+.foe.power{border-color:#6a4a2a}
+.cd{font-size:20px;font-weight:800;color:var(--ember2);width:34px;text-align:center}
+
+/* 로그 */
+.log{height:190px;overflow:auto;background:#0f0d0b;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
+.log div{padding:1px 0;color:#cfc6b9}
+.log .h{color:var(--ember2);margin-top:4px;font-weight:600}
+.log .bad{color:#e9867c} .log .good{color:#8fd0b8}
+
+/* 모달 */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;padding:14px;z-index:20}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;max-width:560px;width:100%;max-height:86vh;overflow:auto}
+.modal h2{font-size:18px;margin-bottom:10px}
+.modal ul,.modal ol{padding-left:20px;margin:6px 0}
+.modal li{margin:5px 0}
+.modal textarea{width:100%;height:150px;background:#0f0d0b;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:12px/1.4 monospace}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:99px;padding:5px 11px}
+.chip.on{background:var(--ember);border-color:var(--ember);color:#1a0f06;font-weight:700}
+.ord{display:flex;gap:6px;align-items:center;margin:5px 0;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+.toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:#3a1f1b;border:1px solid #7a3b33;border-radius:10px;padding:9px 14px;z-index:30;max-width:92vw}
+.disc{display:flex;flex-wrap:wrap;gap:5px}
+.disc span{border:1px solid var(--line);border-radius:6px;padding:2px 7px;background:var(--panel2);font-size:13px}
+
+/* ===== v3 추가: 일행·종·설정·선택 ===== */
+.sm{font-size:12.5px}
+.row.end{justify-content:flex-end;margin-top:12px}
+.row.nowrap{flex-wrap:nowrap}
+.grow{flex:1}
+.card .memo{font-size:11px;color:var(--dim);font-style:italic}
+.cd.hp{color:var(--boss)}
+.pips.hunger{color:#e9867c}
+.center h1.win{color:var(--grave)} .center h1.lose{color:var(--boss)}
+.after{color:var(--ember2)}
+.log.short{height:auto;max-height:240px;margin-bottom:10px}
+.bar.mg i{background:var(--mage)}
+.seat{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--dim);margin-left:6px;font-weight:600}
+.seat.human{border-color:var(--ember);color:var(--ember2)}
+
+.turns{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:12.5px}
+.tk{border:1px solid var(--line);border-radius:6px;padding:1px 7px;background:var(--panel2)}
+.tk.foe{border-color:#6a3530;color:#e9867c}
+.tk.used{opacity:.45}
+.tk.used.now{opacity:1;outline:1px solid var(--ember2)}
+.turns .sep{color:var(--dim);margin:0 4px}
+.peek{margin-left:auto;color:var(--ember2)}
+
+.party{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:8px}
+.pm{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 9px;text-align:left;display:flex;flex-direction:column;gap:3px}
+.pm.act{border-color:var(--ember);box-shadow:0 0 0 1px var(--ember) inset;background:linear-gradient(#2a1d14,#1d1916)}
+.pm.ex{opacity:.45}
+.pm .h{display:flex;justify-content:space-between;align-items:center}
+.pm .mini{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:var(--dim)}
+.brs{display:flex;gap:3px}
+.brs i{width:15px;height:15px;border-radius:4px;border:1px solid var(--line);font-style:normal;font-size:10px;display:grid;place-items:center;color:var(--dim)}
+.brs i.o{background:#7a5a3a;border-color:var(--ember)}
+.brs i.p{box-shadow:0 0 0 2px var(--spell) inset}
+
+.ability{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+.breach .h small{color:var(--dim);font-weight:400}
+.breach .cost-t{color:#e9867c}
+
+.setup .slot{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.setup .slot .no{width:22px;height:22px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;font-size:12px}
+.setup .slot .role{flex-basis:100%;font-size:12.5px;padding-left:32px}
+.setup .sect h3{margin-bottom:8px}
+.modal .opt{text-align:left;display:flex;flex-direction:column;gap:2px;padding:9px 12px}
+.modal .opt small{color:var(--dim);font-size:12px}
+.modal .breaches{margin:8px 0}
+.modal h3{margin:10px 0 4px}
+.modal .cards .card{width:112px}
+.stat label{flex-wrap:wrap;gap:0 8px}
+.stat label span:first-child{white-space:nowrap}
+.col{display:flex;flex-direction:column;gap:8px}
+.modal .col .btn{width:100%}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.stats .stat:nth-child(3){grid-column:1/-1}}
+
+</style></head>
+<body><div id="app"></div>
+<script>
+/* 재의 문 (Ashgate) — 게임 엔진 v3 (일행 1~4인 · 일반판 보충 설계 1단계)
+ * 규칙 틀: 협력 덱빌딩(섞지 않는 덱, 가변 턴 순서, 균열/준비/시전, 적 덱)을 따르고
+ * 카드·세계관·수치는 전부 data.js(시나리오 데이터)에서 온다.
+ * 엔진은 DOM을 모른다. 상태(state)는 순수 JSON이라 그대로 세이브된다.
+ * 생성형 AI 판단은 어디에도 들어가지 않는다 (같은 seed + 같은 행동 = 같은 결과).
+ *
+ * v2: 일행 1~4인(각자 덱·손·균열), 자리(seats), 턴 순서 덱(M0..M3 + W + N), 새 적 차례 순서, 카드 발동 굶주림, 탈진.
+ * v3: 일반판 1단계 — 새로 생긴 효과(잊음·회수·동료 새김·새김 대가·최대 생명 등), 적/공급처/난이도 선택,
+ *     "동료가 없으면 자기 자신에게 적용" 규칙, 효과 중 선택은 행동의 pick/allyBreach/power/targets로 받고
+ *     없으면 엔진이 정한 기본 규칙을 쓴다(그래서 행동이 선택 때문에 거부되는 일은 없다).
+ *
+ * 용어: 엔진 내부 이름(breach, nemesis …)은 그대로. 화면 글자(지기·새김·덧긋기·열·징조·잿것·종)는 데이터/UI에서.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.AshEngine = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  // ---------- 난수 (상태에 저장되는 시드형 RNG) ----------
+  function rnd(s) {
+    s.rng = (s.rng + 0x6D2B79F5) | 0;
+    let t = s.rng;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function shuffle(s, arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd(s) * (i + 1));
+      const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  // 효과 목록을 사람이 읽는 글로 (카드 설명은 항상 효과 데이터에서 자동 생성 → 글과 규칙이 어긋나지 않음)
+  function describe(effects) {
+    return (effects || []).map(function (e) {
+      const ally = e.to === 'ally' || e.who === 'ally';
+      switch (e.op) {
+        case 'ember': return '불씨 +' + e.n;
+        case 'dmg': return '피해 ' + e.n;
+        case 'heal': return '성채 +' + e.n;
+        case 'healMage': return (ally ? '동료 ' : '자신 ') + '생명 +' + e.n;
+        case 'charge': return (ally ? '동료 ' : '') + '열 +' + e.n;
+        case 'chargeReset': return '열 0';
+        case 'draw': return (ally ? '동료 ' : '') + '카드 ' + e.n + '장 뽑기';
+        case 'hitGrave': return '성채 -' + e.n;
+        case 'hitMage': return (e.all ? '모든 지기 -' : '지기 -') + e.n;
+        case 'hitSelf': return '자신 -' + e.n;
+        case 'hunger': return e.n < 0 ? '굶주림 ' + e.n : '굶주림 +' + e.n;
+        case 'unleash': return '격화' + (e.n > 1 ? ' ×' + e.n : '');
+        case 'forget': return '잊음 ' + (e.from === 'hand' ? '(손) ' : e.from === 'discardTop' ? '(버림 맨 위) ' : '(덱 맨 위) ') + (e.n || 1) + '장' + (e.optional ? ' (선택)' : '');
+        case 'recall': return (ally ? '동료 ' : '') + '회수 ' + (e.n || 1) + '장 (' + (e.to === 'hand' ? '손' : '덱 맨 위') + ')';
+        case 'focusAlly': return '동료 새김 덧긋기 +' + (e.n || 1);
+        case 'openAlly': return '동료 새김 즉시 열기';
+        case 'maxLife': return '최대 생명 -' + e.n;
+        case 'dmgMinion': return '잿것 하나에 피해 ' + e.n;
+        case 'dmgAll': return '모든 잿것과 적에게 피해 ' + e.n;
+        case 'peekTurn': return '다음 종 미리 보기';
+        case 'delayPower': return '징조 하나 +' + e.n + '차례';
+        case 'anchor': return '매듭: 다음 섞임/먹힘 1회 무효';
+        case 'devour': return e.who === 'all' ? '모든 지기의 버림 맨 위 ' + (e.n || 1) + '장 먹힘' : '지기 1명의 버림 맨 위 ' + (e.n || 1) + '장 먹힘';
+        case 'scramble': return e.who === 'all' ? '모든 지기의 버림 더미 섞음' : '지기 1명의 버림 더미 섞음';
+        case 'reshuffleTurns': return '남은 종을 다시 섞음';
+        case 'returnDevoured': return '먹힌 카드 ' + (e.n || 1) + '장 반환';
+        default: return e.op;
+      }
+    }).join(', ');
+  }
+
+  function create(scn) {
+    const C = scn.cards;
+    const NEMS = scn.nemeses || { default: scn.nemesis };
+    const NEM_DEFAULT = scn.defaultNemesis || Object.keys(NEMS)[0];
+    const NC = {};                                   // 모든 적의 카드를 한 표로 (id는 적끼리 겹치지 않는다)
+    Object.keys(NEMS).forEach(function (k) { Object.assign(NC, NEMS[k].cards); });
+    const MAGES = scn.mages || [scn.mage];
+    const def = function (id) { return C[id] || NC[id]; };
+    const nm = function (id) { const d = def(id); return d ? d.name : id; };
+
+    function log(s, msg) {
+      s.logN = (s.logN || 0) + 1;            // 지금까지 쌓인 로그 줄 수 (앞부분이 잘려도 UI가 새 줄을 셀 수 있게)
+      s.log.push(msg);
+      if (s.log.length > 300) s.log.splice(0, s.log.length - 300);
+    }
+    function nem(s) { return NEMS[s.nem]; }
+    function cur(s) { return s.active >= 0 ? s.mages[s.active] : null; }
+    function mdef(s, mi) { return MAGES[s.mages[mi].di]; }
+    function living(s) {
+      const r = [];
+      s.mages.forEach(function (m, i) { if (!m.exhausted) r.push(i); });
+      return r;
+    }
+    function who(s, mi) { return s.mages[mi].name; }
+    function cap(s, mi, v) { return Math.min(MAGES[s.mages[mi].di].ability.cost, v); }
+
+    // ---------- 공급처 ----------
+    // 공급 카드 풀: 공급처에 올릴 수 있는 카드(시작 카드·레거시 전용 제외). 적에게 쓸모없는 카드(usefulVs)는 그 적일 때 뺀다.
+    function poolOf(nemId) {
+      const r = { gems: [], relics: [], spells: [] };
+      Object.keys(C).forEach(function (id) {
+        const c = C[id];
+        if (c.legacyOnly || c.starter) return;
+        if (c.usefulVs && c.usefulVs.indexOf(nemId) < 0) return;
+        if (c.type === 'gem') r.gems.push(id);
+        else if (c.type === 'relic') r.relics.push(id);
+        else if (c.type === 'spell') r.spells.push(id);
+      });
+      return r;
+    }
+    // 무작위 9더미. 비용 3 이하 보석 1개 이상, 비용 4 이하 주문 1개 이상은 반드시 넣는다.
+    function randomSupply(s, nemId) {
+      const pool = poolOf(nemId);
+      const need = { gems: 3, relics: 2, spells: 4 };
+      const out = {};
+      Object.keys(need).forEach(function (g) {
+        const list = shuffle(s, pool[g].slice());
+        const cheapLimit = g === 'gems' ? 3 : g === 'spells' ? 4 : null;
+        let pick = [];
+        if (cheapLimit != null) {
+          const cheap = list.filter(function (id) { return C[id].cost <= cheapLimit; })[0];
+          if (cheap) pick.push(cheap);
+        }
+        list.forEach(function (id) { if (pick.length < need[g] && pick.indexOf(id) < 0) pick.push(id); });
+        out[g] = pick;
+      });
+      return out;
+    }
+    function resolveSupply(s, opt, nemId) {
+      if (opt && typeof opt === 'object') return opt;
+      if (opt === 'random') return randomSupply(s, nemId);
+      if (opt && opt !== 'recommended' && scn.supplySets && scn.supplySets[opt]) return scn.supplySets[opt];
+      const rec = NEMS[nemId] && NEMS[nemId].recommended;   // 적마다 추천 세트가 다를 수 있다 (예: 먹힘/섞임 대응)
+      return (rec && scn.supplySets && scn.supplySets[rec]) || scn.supply;
+    }
+
+    // ---------- 새 게임 ----------
+    function defaultSlots(n) { return n === 1 ? 3 : 4; }
+
+    function newGame(opts) {
+      opts = opts || {};
+      const lg = opts.legacy || {};
+      const seed = opts.seed != null ? opts.seed : Math.floor(Math.random() * 2147483647);
+      const party = (opts.party || [0]).map(function (p) {
+        return typeof p === 'string' ? MAGES.findIndex(function (m) { return m.id === p; }) : p;
+      });
+      if (party.length < 1 || party.length > 4) throw new Error('일행은 1~4명이어야 한다.');
+      party.forEach(function (p) { if (!MAGES[p]) throw new Error('없는 일행: ' + p); });
+      const n = party.length;
+      const seats = (opts.seats || party.map(function (_, i) { return i === 0 ? 'human' : 'bot'; })).slice(0, n);
+      while (seats.length < n) seats.push('bot');
+
+      const s = {
+        v: 3, scn: scn.id, rng: seed | 0, uid: 1, turnNo: 0, nemTurns: 0,
+        phase: 'init', active: -1, lastActive: -1, over: null, reason: '', log: [],
+        hunger: 0, legacy: lg, seats: seats, peek: null, devoured: []
+      };
+
+      // 적 / 난이도
+      let nemId = opts.nemesis || NEM_DEFAULT;
+      if (nemId === 'random') { const ks = Object.keys(NEMS); nemId = ks[Math.floor(rnd(s) * ks.length)]; }
+      if (!NEMS[nemId]) throw new Error('없는 적: ' + nemId);
+      s.nem = nemId;
+      const N = NEMS[nemId];
+      s.difficulty = opts.difficulty || 'normal';
+      const diff = (scn.difficulties || {})[s.difficulty] || {};
+      const un = N.unleash || { step: 1, threshold: 999, strike: [] };
+      s.step = un.step || 1;
+      s.threshold = Math.max(2, un.threshold + (diff.thresholdDelta || 0));
+      s.hunger = diff.hungerStart || 0;
+
+      // 일행
+      const dupCount = {}, dupSeen = {};
+      party.forEach(function (di) { dupCount[di] = (dupCount[di] || 0) + 1; });
+      s.mages = party.map(function (di, i) {
+        const d = MAGES[di];
+        dupSeen[di] = (dupSeen[di] || 0) + 1;
+        const ids = [];
+        Object.keys(d.startingDeck).forEach(function (id) {
+          for (let k = 0; k < d.startingDeck[id]; k++) ids.push(id);
+        });
+        const lists = [];
+        if (i === 0) lists.push(lg);                       // 최상위 레거시 항목은 첫 번째 일행에게
+        if (lg.mages && lg.mages[d.id]) lists.push(lg.mages[d.id]);
+        lists.forEach(function (l) {
+          (l.deckRemove || []).forEach(function (id) { const k = ids.indexOf(id); if (k >= 0) ids.splice(k, 1); });
+          (l.deckAdd || []).forEach(function (id) { ids.push(id); });
+        });
+        return {
+          di: di, id: d.id, name: d.name + (dupCount[di] > 1 ? ' ' + dupSeen[di] : ''),
+          deck: shuffle(s, ids),                           // 시작할 때 단 한 번만 섞는다
+          hand: [], discard: [], played: [], forgotten: [], anchor: 0,
+          life: d.life, max: d.life, ember: 0, charge: 0, exhausted: false,
+          breaches: d.breaches.map(function (b) {
+            return { open: !!b.open, focus: 0, focusedTurn: -1, prepped: null, preppedTurn: -99 };
+          })
+        };
+      });
+
+      const sc = Object.assign({}, (scn.scaling && scn.scaling[n]) || {}, (N.scaling && N.scaling[n]) || {});   // 적별 배율이 있으면 우선
+      s.graveMax = Math.round((scn.gravehold.life + (lg.graveBonus || 0)) * (sc.graveLife || 1) * (diff.graveLife || 1));
+      s.graveLife = s.graveMax;
+      s.supply = {};
+      const sup = resolveSupply(s, opts.supply, nemId);
+      s.supplyPiles = sup;
+      ['gems', 'relics', 'spells'].forEach(function (g) {
+        sup[g].forEach(function (id) {
+          if (!C[id]) throw new Error('공급처에 없는 카드: ' + id);
+          s.supply[id] = scn.supplyCount[g];
+        });
+      });
+      s.nemMax = Math.round(N.life * (sc.nemLife || 1) * (diff.nemLife || 1)); s.nemLife = s.nemMax;
+      s.powers = []; s.minions = [];
+      const nd = [];
+      Object.keys(N.deck).forEach(function (id) {
+        for (let i = 0; i < N.deck[id]; i++) nd.push(id);
+      });
+      (lg.nemesisAdd || []).forEach(function (id) { nd.push(id); });
+      s.nemDeck = shuffle(s, nd); s.nemDiscard = [];
+
+      // 턴 순서 덱: 일행마다 한 장 + 와일드 + 적 2장
+      const slots = ((scn.turnDeck && scn.turnDeck.slots) || {})[n] || defaultSlots(n);
+      const td = [];
+      for (let i = 0; i < n; i++) td.push('M' + i);
+      for (let i = 0; i < Math.max(0, slots - n); i++) td.push('W');
+      const tdn = scn.turnDeck && scn.turnDeck.nemesis;                // 숫자(모든 인원) 또는 {인원: 장수}
+      const nCount = (tdn && typeof tdn === 'object' ? tdn[n] : tdn) || 2;
+      for (let i = 0; i < nCount; i++) td.push('N');
+      s.turnDeck = shuffle(s, td); s.turnDiscard = [];
+
+      s.mages.forEach(function (m, i) { draw(s, i, 5); });
+      log(s, '전투 시작. ' + N.name + '이(가) 문 밖으로 몸을 내민다.');
+      advance(s);
+      return s;
+    }
+
+    // ---------- 카드 뽑기: 덱이 비면 버림 더미를 "섞지 않고" 그대로 덱으로 ----------
+    function refill(s, mi) {
+      const m = s.mages[mi];
+      if (!m.deck.length && m.discard.length) {
+        m.deck = m.discard; m.discard = [];
+        log(s, who(s, mi) + '의 덱이 비어 버림 더미가 덱이 된다. (섞지 않는다)');
+      }
+    }
+    function draw(s, mi, n) {
+      const m = s.mages[mi];
+      for (let i = 0; i < n; i++) {
+        refill(s, mi);
+        if (!m.deck.length) return;
+        m.hand.push(m.deck.shift());
+      }
+    }
+
+    // ---------- 승패 ----------
+    function check(s) {
+      if (s.over) return;
+      if (s.nemLife <= 0) { s.nemLife = 0; s.over = 'win'; s.reason = nem(s).name + '이(가) 쓰러졌다.'; }
+      else if (s.graveLife <= 0) { s.graveLife = 0; s.over = 'lose'; s.reason = '성채가 무너졌다.'; }
+      else if (!living(s).length) { s.over = 'lose'; s.reason = s.mages.length === 1 ? '지기가 쓰러졌다.' : '모든 지기가 쓰러졌다.'; }
+      if (s.over) { s.phase = 'over'; log(s, '■ ' + s.reason); }
+    }
+
+    // ---------- 피해 / 탈진 ----------
+    function dmgTo(s, target, n) {
+      if (target && target !== 'N') {
+        const mi = s.minions.findIndex(function (m) { return m.uid === target; });
+        if (mi >= 0) {
+          const m = s.minions[mi];
+          m.life -= n;
+          log(s, nm(m.id) + '에게 피해 ' + n + (m.life <= 0 ? ' — 쓰러졌다.' : ' (남은 ' + m.life + ')'));
+          if (m.life <= 0) {
+            s.minions.splice(mi, 1); s.nemDiscard.push(m.id);
+            const od = NC[m.id].onDeath;                 // 처치 효과 (예: 먹힌 카드 반환)
+            if (od) applyEffects(s, od, null);
+          }
+          return;
+        }
+      }
+      s.nemLife -= n;
+      log(s, nem(s).name + '에게 피해 ' + n + ' (남은 ' + Math.max(0, s.nemLife) + ')');
+      check(s);
+    }
+    function exhaust(s, mi) {
+      const m = s.mages[mi];
+      m.life = 0; m.exhausted = true;
+      m.discard = m.discard.concat(m.hand, m.played);
+      m.breaches.forEach(function (b) { if (b.prepped) { m.discard.push(b.prepped); b.prepped = null; } });
+      m.hand = []; m.played = [];
+      log(s, who(s, mi) + '이(가) 쓰러졌다. (탈진)');
+      check(s);
+    }
+    function hitMage(s, mi, n) {
+      const m = s.mages[mi];
+      if (m.exhausted) return;
+      m.life -= n;
+      log(s, who(s, mi) + '이(가) ' + n + ' 피해를 입었다 (' + Math.max(0, m.life) + '/' + m.max + ')');
+      if (m.life <= 0) exhaust(s, mi);
+    }
+    // 적 효과가 맞출 술사를 고른다. 시드 난수라 같은 판은 같은 결과.
+    function pickMageTarget(s) {
+      const alive = living(s);
+      if (!alive.length) return -1;
+      if (alive.length === 1) return alive[0];
+      const rule = nem(s).targeting || 'random';
+      if (rule === 'lowest') {
+        return alive.slice().sort(function (a, b) { return s.mages[a].life - s.mages[b].life || a - b; })[0];
+      }
+      if (rule === 'last' && s.lastActive >= 0 && alive.indexOf(s.lastActive) >= 0) return s.lastActive;
+      return alive[Math.floor(rnd(s) * alive.length)];
+    }
+
+    // ---------- 굶주림 ----------
+    function addHunger(s, n, why) {
+      if (n < 0) {
+        s.hunger = Math.max(0, s.hunger + n);
+        log(s, nem(s).name + '의 굶주림이 가라앉는다 (' + s.hunger + '/' + s.threshold + ')');
+        return;
+      }
+      s.hunger += n;
+      if (why) log(s, nem(s).name + '의 굶주림이 깊어진다 (' + s.hunger + '/' + s.threshold + ')');
+      while (s.hunger >= s.threshold && !s.over) {
+        s.hunger -= s.threshold;
+        log(s, nem(s).name + '의 굶주림이 폭발한다!');
+        applyEffects(s, (nem(s).unleash && nem(s).unleash.strike) || [], null);
+      }
+    }
+
+    // 먹힘: 지기의 버림 더미 맨 위 n장이 이번 판에서 제거되어 이름 더미(s.devoured)에 쌓인다. 잊음과 달리 굶주림 비용은 없다.
+    // 매듭(anchor)이 있으면 1회 무효로 만들고 매듭만 소모한다.
+    function devourFrom(s, mi, n) {
+      const m = s.mages[mi];
+      if (m.anchor > 0) { m.anchor--; log(s, who(s, mi) + '의 매듭이 이름을 붙든다. (먹힘 무효)'); return; }
+      for (let k = 0; k < n; k++) {
+        if (!m.discard.length) break;
+        const card = m.discard.pop();
+        s.devoured.push({ mage: mi, id: card });
+        log(s, who(s, mi) + '의 「' + nm(card) + '」이(가) 이름 더미로 먹혔다.');
+      }
+    }
+    function doDevour(s, e) {
+      const n = e.n || 1;
+      if (e.who === 'all') { living(s).forEach(function (k) { if (!s.over) devourFrom(s, k, n); }); return; }
+      // 한 명: 버림 더미에 카드가 있는 일행 중에서 (없으면 아무도 먹히지 않는다)
+      const cand = living(s).filter(function (k) { return s.mages[k].discard.length || s.mages[k].anchor > 0; });
+      if (!cand.length) return;
+      const t = cand.length === 1 ? cand[0] : cand[Math.floor(rnd(s) * cand.length)];
+      devourFrom(s, t, n);
+    }
+    // 섞음: 버림 더미를 시드 난수로 섞는다 (이 게임에서 섞는 유일한 효과). 매듭이 있으면 1회 무효.
+    function scrambleOne(s, mi) {
+      const m = s.mages[mi];
+      if (m.anchor > 0) { m.anchor--; log(s, who(s, mi) + '의 매듭이 기억의 순서를 붙든다. (섞임 무효)'); return; }
+      if (m.discard.length < 2) return;
+      shuffle(s, m.discard);
+      log(s, who(s, mi) + '의 버림 더미가 뒤섞였다.');
+    }
+    function doScramble(s, e) {
+      if (e.who === 'all') { living(s).forEach(function (k) { if (!s.over) scrambleOne(s, k); }); return; }
+      const cand = living(s).filter(function (k) { return s.mages[k].discard.length >= 2 || s.mages[k].anchor > 0; });
+      if (!cand.length) return;
+      scrambleOne(s, cand.length === 1 ? cand[0] : cand[Math.floor(rnd(s) * cand.length)]);
+    }
+    function doReturnDevoured(s, e) {
+      for (let k = 0; k < (e.n || 1); k++) {
+        if (!s.devoured.length) return;
+        const d = s.devoured.pop();                    // 가장 최근에 먹힌 카드부터 돌려준다
+        s.mages[d.mage].discard.push(d.id);
+        log(s, '「' + nm(d.id) + '」이(가) ' + who(s, d.mage) + '에게 돌아왔다. (버림 더미 맨 위)');
+      }
+    }
+
+    // ---------- 효과 중 선택: pick(카드), allyBreach(동료 새김), power(징조), targets(피해 대상) ----------
+    // 대상 일행: "동료가 없으면 자기 자신" — 고른 동료가 없거나 쓰러졌거나 자신이면 자신.
+    function allyOrSelf(s, ctx) {
+      const a = ctx && ctx.ally;
+      if (a != null && a !== ctx.mage && s.mages[a] && !s.mages[a].exhausted) return a;
+      return ctx.mage;
+    }
+    function takePick(ctx) { return ctx && ctx.picks && ctx.picks.length ? ctx.picks.shift() : undefined; }
+    function closedOrder(s, t) {          // 닫힌 새김을 열기 쉬운 순서로
+      const m = s.mages[t], MD = MAGES[m.di];
+      const r = [];
+      m.breaches.forEach(function (b, i) {
+        if (!b.open) r.push({ i: i, cost: Math.max(0, (MD.breaches[i].openCost || 0) - b.focus) });
+      });
+      return r.sort(function (a, b) { return a.cost - b.cost || a.i - b.i; });
+    }
+    function chooseClosedBreach(s, t, ctx) {
+      const m = s.mages[t];
+      const want = ctx && ctx.allyBreach;
+      if (want != null && m.breaches[want] && !m.breaches[want].open) return want;
+      const o = closedOrder(s, t);
+      return o.length ? o[0].i : -1;
+    }
+
+    // 새김을 연다 + 대가(onOpen) 발동. 덧긋기 4번째로 열리든 불씨로 열든 똑같다.
+    function openBreach(s, t, bi) {
+      const m = s.mages[t], b = m.breaches[bi];
+      if (b.open) return;
+      b.open = true;
+      log(s, m.name + ': 새김 ' + (bi + 1) + '이 열렸다.');
+      const d = MAGES[m.di].breaches[bi];
+      if (d.onOpen && d.onOpen.length) applyEffects(s, d.onOpen, { mage: t, picks: [], targets: [] });
+    }
+    function focusBreach(s, t, bi) {
+      const b = s.mages[t].breaches[bi];
+      b.focus++;
+      log(s, s.mages[t].name + ': 새김 ' + (bi + 1) + ' 덧긋기 (' + b.focus + '/4)');
+      if (b.focus >= 4) openBreach(s, t, bi);
+    }
+
+    // 잊음: 이번 판에서 영구 제거 + 굶주림 +1 (잊은 기억은 문으로 간다)
+    function doForget(s, mi, e, ctx) {
+      const m = s.mages[mi];
+      const n = e.n || 1;
+      for (let k = 0; k < n && !s.over; k++) {
+        let card = null;
+        if (e.from === 'hand') {
+          if (!m.hand.length) break;
+          const p = takePick(ctx);
+          let idx;
+          if (p != null && m.hand[p] != null) idx = p;
+          else if (e.optional) break;                     // 선택 효과: 고르지 않으면 하지 않는다
+          else idx = autoForgetIdx(m);
+          card = m.hand.splice(idx, 1)[0];
+        } else if (e.from === 'discardTop') {
+          if (!m.discard.length) break;
+          card = m.discard.pop();
+        } else {                                          // deckTop
+          refill(s, mi);
+          if (!m.deck.length) break;
+          card = m.deck.shift();
+        }
+        m.forgotten.push(card);
+        log(s, m.name + '이(가) 「' + nm(card) + '」을(를) 잊는다. 기억은 문으로 간다.');
+        addHunger(s, 1, true);
+      }
+    }
+    function cardWorth(id) {              // 기본 선택 규칙용 대략의 값 (비용 우선, 같으면 효과 크기)
+      const c = def(id);
+      return (c.cost || 0) * 10 + (c.effects || []).reduce(function (a, x) { return a + (x.n || 0); }, 0);
+    }
+    function autoForgetIdx(m) {           // 필수 잊음의 기본: 가장 싼 카드
+      let best = 0;
+      m.hand.forEach(function (id, i) { if (cardWorth(id) < cardWorth(m.hand[best])) best = i; });
+      return best;
+    }
+    // 회수: 버림 더미에서 골라 덱 맨 위(기본)/손으로. pick:'top'이면 버림 더미 맨 위를 가져온다.
+    function doRecall(s, mi, e, ctx) {
+      const t = e.who === 'ally' ? allyOrSelf(s, ctx) : mi;
+      const tm = s.mages[t];
+      const n = e.n || 1;
+      for (let k = 0; k < n; k++) {
+        if (!tm.discard.length) break;
+        let idx;
+        if (e.pick === 'top') idx = tm.discard.length - 1;
+        else {
+          const p = takePick(ctx);
+          if (p != null && tm.discard[p] != null) idx = p;
+          else {                                          // 기본: 가장 비싼 카드 (같으면 더 최근 것)
+            idx = 0;
+            tm.discard.forEach(function (id, i) { if (cardWorth(id) >= cardWorth(tm.discard[idx])) idx = i; });
+          }
+        }
+        const card = tm.discard.splice(idx, 1)[0];
+        if (e.to === 'hand') tm.hand.push(card); else tm.deck.unshift(card);
+        log(s, tm.name + ': 「' + nm(card) + '」을(를) 되찾아 ' + (e.to === 'hand' ? '손에' : '덱 맨 위에') + ' 둔다.');
+      }
+    }
+    function minionTarget(s, ctx) {       // 잿것 하나: 고른 대상이 잿것이면 그것, 아니면 생명이 가장 낮은 잿것
+      if (!s.minions.length) return null;
+      if (ctx && ctx.targets && ctx.targets.length) {
+        const p = ctx.targets.shift();
+        if (p !== 'N' && s.minions.some(function (m) { return m.uid === p; })) return p;
+      }
+      return s.minions.slice().sort(function (a, b) { return a.life - b.life || a.uid - b.uid; })[0].uid;
+    }
+
+    // ---------- 효과 처리 ----------
+    function applyEffects(s, effects, ctx) {
+      const mi = ctx && ctx.mage != null ? ctx.mage : -1;
+      for (let i = 0; i < effects.length; i++) {
+        if (s.over) return;
+        const e = effects[i];
+        switch (e.op) {
+          case 'ember': if (mi >= 0) s.mages[mi].ember += e.n; break;
+          case 'dmg': {
+            let n = e.n;
+            if (ctx && ctx.dmgBonus) { n += ctx.dmgBonus; ctx.dmgBonus = 0; }
+            dmgTo(s, ctx && ctx.targets ? ctx.targets.shift() : 'N', n);
+            break;
+          }
+          case 'dmgMinion': {
+            if (mi < 0) break;
+            const u = minionTarget(s, ctx);
+            if (u != null) dmgTo(s, u, e.n);
+            break;
+          }
+          case 'dmgAll':
+            s.minions.slice().forEach(function (m) { if (!s.over) dmgTo(s, m.uid, e.n); });
+            if (!s.over) dmgTo(s, 'N', e.n);
+            break;
+          case 'heal':
+            s.graveLife = Math.min(s.graveMax, s.graveLife + e.n);
+            log(s, '성채가 ' + e.n + ' 회복 (' + s.graveLife + '/' + s.graveMax + ')'); break;
+          case 'healMage': {
+            if (mi < 0) break;
+            const t = e.to === 'ally' ? allyOrSelf(s, ctx) : mi;
+            const m = s.mages[t];
+            m.life = Math.min(m.max, m.life + e.n);
+            log(s, who(s, t) + '이(가) ' + e.n + ' 회복 (' + m.life + '/' + m.max + ')'); break;
+          }
+          case 'charge': {
+            if (mi < 0) break;
+            const t = e.to === 'ally' ? allyOrSelf(s, ctx) : mi;
+            s.mages[t].charge = cap(s, t, s.mages[t].charge + e.n); break;
+          }
+          case 'chargeReset': if (mi >= 0) { s.mages[mi].charge = 0; log(s, who(s, mi) + '의 열이 빠져나간다.'); } break;
+          case 'draw': {
+            if (mi < 0) break;
+            draw(s, e.to === 'ally' ? allyOrSelf(s, ctx) : mi, e.n); break;
+          }
+          case 'hitGrave':
+            s.graveLife -= e.n; log(s, '성채가 ' + e.n + ' 피해를 입었다 (' + Math.max(0, s.graveLife) + '/' + s.graveMax + ')'); check(s); break;
+          case 'hitMage':
+            if (e.all) living(s).forEach(function (k) { if (!s.over) hitMage(s, k, e.n); });
+            else { const t = pickMageTarget(s); if (t >= 0) hitMage(s, t, e.n); }
+            break;
+          case 'hitSelf': if (mi >= 0) { hitMage(s, mi, e.n); } break;
+          case 'maxLife': {
+            if (mi < 0) break;
+            const m = s.mages[mi];
+            m.max = Math.max(1, m.max - e.n); m.life = Math.max(1, Math.min(m.max, m.life - e.n));
+            log(s, who(s, mi) + '의 최대 생명이 ' + e.n + ' 줄었다 (' + m.life + '/' + m.max + ')'); break;
+          }
+          case 'hunger': addHunger(s, e.n, false); break;
+          case 'unleash':
+            for (let k = 0; k < e.n && !s.over; k++) addHunger(s, s.step, true);
+            break;
+          case 'forget': if (mi >= 0) doForget(s, mi, e, ctx); break;
+          case 'recall': if (mi >= 0) doRecall(s, mi, e, ctx); break;
+          case 'focusAlly': case 'openAlly': {
+            if (mi < 0) break;
+            const t = allyOrSelf(s, ctx);
+            const bi = chooseClosedBreach(s, t, ctx);
+            if (bi < 0) break;
+            if (e.op === 'openAlly') openBreach(s, t, bi);
+            else for (let k = 0; k < (e.n || 1) && !s.mages[t].breaches[bi].open; k++) focusBreach(s, t, bi);
+            break;
+          }
+          case 'peekTurn':
+            s.peek = s.turnDeck.length ? s.turnDeck[s.turnDeck.length - 1] : null;
+            log(s, '종소리를 미리 듣는다: 다음은 ' + (s.peek === 'N' ? '적' : s.peek === 'W' ? '와일드' : s.peek ? who(s, parseInt(s.peek.slice(1), 10)) : '(다시 섞는다)')); break;
+          case 'delayPower': {
+            if (!s.powers.length) break;
+            let p = ctx && ctx.power != null && s.powers[ctx.power] ? s.powers[ctx.power] : null;
+            if (!p) p = s.powers.slice().sort(function (a, b) { return a.tokens - b.tokens; })[0];
+            p.tokens += e.n;
+            log(s, '[' + nm(p.id) + '] 발동이 ' + e.n + '차례 늦춰진다 (남은 ' + p.tokens + ')'); break;
+          }
+          case 'devour': doDevour(s, e); break;
+          case 'scramble': doScramble(s, e); break;
+          case 'reshuffleTurns':
+            shuffle(s, s.turnDeck); s.peek = null;
+            log(s, '종의 순서가 뒤엉킨다. (남은 종을 다시 섞는다)'); break;
+          case 'returnDevoured': doReturnDevoured(s, e); break;
+          case 'anchor': if (mi >= 0) { s.mages[mi].anchor += (e.n || 1); log(s, who(s, mi) + '이(가) 매듭을 묶는다.'); } break;
+        }
+      }
+    }
+
+    // ---------- 균열 (현재 차례인 일행 기준) ----------
+    function openCost(s, bi) {
+      const m = cur(s);
+      return Math.max(0, (MAGES[m.di].breaches[bi].openCost || 0) - m.breaches[bi].focus);
+    }
+    function castables(s) {
+      const m = cur(s), r = [];
+      if (!m) return r;
+      m.breaches.forEach(function (b, i) { if (b.prepped && b.preppedTurn < s.turnNo) r.push(i); });
+      return r;
+    }
+    // 이 균열에서 시전하면 나오는 피해 횟수와 각 피해량 (균열 보너스 반영) — UI/봇이 대상 선택에 쓴다
+    function dmgInstances(s, bi) {
+      const m = cur(s), b = m.breaches[bi], d = MAGES[m.di].breaches[bi];
+      const arr = [];
+      def(b.prepped).effects.forEach(function (e) { if (e.op === 'dmg') arr.push(e.n); });
+      if (b.open && d.bonus && d.bonus.type === 'dmg' && arr.length) arr[0] += d.bonus.n;
+      return arr;
+    }
+
+    // ---------- 턴 진행 ----------
+    function advance(s) {
+      while (!s.over) {
+        if (!s.turnDeck.length) { s.turnDeck = shuffle(s, s.turnDiscard); s.turnDiscard = []; }
+        const t = s.turnDeck.pop();
+        s.peek = null;
+        s.turnDiscard.push(t);
+        if (t === 'N') { nemesisTurn(s); continue; }
+        if (t === 'W') {
+          const alive = living(s);
+          if (!alive.length) return;
+          if (alive.length === 1) { startMageTurn(s, alive[0]); return; }
+          s.phase = 'wild'; s.active = -1;
+          log(s, '── 와일드: 누가 움직일지 고른다 ──');
+          return;
+        }
+        const mi = parseInt(t.slice(1), 10);
+        if (s.mages[mi].exhausted) continue;
+        startMageTurn(s, mi);
+        return;
+      }
+    }
+    function startMageTurn(s, mi) {
+      const m = s.mages[mi];
+      s.active = mi; s.turnNo++; m.ember = 0; m.played = []; s.phase = 'cast';
+      log(s, '── ' + m.name + '의 차례 ' + s.turnNo + ' ──');
+      if (!castables(s).length) s.phase = 'main';
+    }
+    function nemesisTurn(s) {
+      s.nemTurns++; s.active = -1;
+      log(s, '── 적의 차례 (' + nem(s).name + ') ──');
+      // 1) 메인 단계: 하수인과 힘을 놓인 순서(오래된 것부터)대로 처리
+      const items = [];
+      s.powers.forEach(function (p) { items.push({ k: 'p', o: p }); });
+      s.minions.forEach(function (m) { items.push({ k: 'm', o: m }); });
+      items.sort(function (a, b) { return a.o.uid - b.o.uid; });
+      for (let i = 0; i < items.length; i++) {
+        if (s.over) return;
+        const it = items[i], o = it.o;
+        if (it.k === 'p') {
+          if (s.powers.indexOf(o) < 0) continue;
+          o.tokens--;
+          if (o.tokens <= 0) {
+            log(s, '징조 [' + nm(o.id) + '] 발동!');
+            s.powers.splice(s.powers.indexOf(o), 1); s.nemDiscard.push(o.id);
+            applyEffects(s, NC[o.id].effects, null);
+          } else log(s, '[' + nm(o.id) + '] 남은 ' + o.tokens);
+        } else {
+          if (s.minions.indexOf(o) < 0) continue;
+          log(s, nm(o.id) + '의 공격');
+          applyEffects(s, NC[o.id].each, null);
+        }
+      }
+      if (s.over) return;
+      // 2) 뽑기 단계: 적 카드 한 장 (공격은 즉시 처리, 하수인·힘은 놓는다 — 놓인 차례에는 움직이지 않는다)
+      if (!s.nemDeck.length) { s.nemDeck = shuffle(s, s.nemDiscard); s.nemDiscard = []; }
+      if (!s.nemDeck.length) { log(s, '적 덱이 비었다.'); return; }
+      const id = s.nemDeck.pop();
+      const d = NC[id];
+      if (d.kind === 'attack') {
+        log(s, '「' + d.name + '」');
+        s.nemDiscard.push(id);
+        applyEffects(s, d.effects, null);
+      } else if (d.kind === 'power') {
+        s.powers.push({ uid: s.uid++, id: id, tokens: d.countdown });
+        log(s, '「' + d.name + '」 징조 — ' + d.countdown + '번의 적 차례 뒤 발동');
+      } else if (d.kind === 'minion') {
+        var lf = d.life + (d.lifePlus === 'devoured' ? s.devoured.length : 0);   // 이름 더미 장수만큼 단단하다
+        s.minions.push({ uid: s.uid++, id: id, life: lf });
+        log(s, '「' + d.name + '」 잿것 등장 (생명 ' + lf + ')');
+      }
+      if (!s.over && d.onDraw) applyEffects(s, d.onDraw, null);
+    }
+
+    // ---------- 행동 검증 (UI 버튼 활성/비활성에도 사용) ----------
+    function validate(s, a) {
+      if (s.over) return '게임이 끝났다.';
+      if (s.phase === 'wild') {
+        if (a.type !== 'pickMage') return '먼저 움직일 지기를 골라야 한다.';
+        if (!s.mages[a.mage] || s.mages[a.mage].exhausted) return '고를 수 없는 지기다.';
+        return null;
+      }
+      if (a.type === 'pickMage') return '지금은 지기를 고르는 단계가 아니다.';
+      const m = cur(s);
+      if (!m) return '지금은 일행의 차례가 아니다.';
+      const MD = MAGES[m.di];
+      const main = s.phase === 'main';
+      if (a.ally != null && (!s.mages[a.ally] || s.mages[a.ally].exhausted || a.ally === s.active)) return '동료 대상이 올바르지 않다.';
+      switch (a.type) {
+        case 'cast':
+          if (s.phase !== 'cast') return '시전 단계가 아니다.';
+          if (castables(s).indexOf(a.breach) < 0) return '시전할 수 없는 새김이다.';
+          return null;
+        case 'endCast':
+          if (s.phase !== 'cast') return '시전 단계가 아니다.';
+          if (castables(s).some(function (i) { return !m.breaches[i].open; })) return '닫힌 새김의 주문은 반드시 시전해야 한다.';
+          return null;
+        case 'play': {
+          if (!main) return '주 단계가 아니다.';
+          const c = m.hand[a.idx] && def(m.hand[a.idx]);
+          if (!c || (c.type !== 'gem' && c.type !== 'relic')) return '낼 수 없는 카드다.';
+          return null;
+        }
+        case 'buy': {
+          if (!main) return '주 단계가 아니다.';
+          const c = C[a.id];
+          if (!c || !(s.supply[a.id] > 0)) return '재고가 없다.';
+          if (m.ember < c.cost) return '불씨가 부족하다.';
+          return null;
+        }
+        case 'focus': {
+          if (!main) return '주 단계가 아니다.';
+          const b = m.breaches[a.breach], d = MD.breaches[a.breach];
+          if (!b || b.open) return '닫힌 새김에만 덧그을 수 있다.';
+          if (m.ember < d.focusCost) return '불씨가 부족하다.';
+          return null;
+        }
+        case 'open': {
+          if (!main) return '주 단계가 아니다.';
+          const b = m.breaches[a.breach];
+          if (!b || b.open) return '닫힌 새김만 열 수 있다.';
+          if (m.ember < openCost(s, a.breach)) return '불씨가 부족하다.';
+          return null;
+        }
+        case 'prep': {
+          if (!main) return '주 단계가 아니다.';
+          const c = m.hand[a.idx] && def(m.hand[a.idx]);
+          const b = m.breaches[a.breach];
+          if (!c || c.type !== 'spell') return '주문 카드가 아니다.';
+          if (!b) return '없는 새김이다.';
+          if (b.prepped) return '이미 주문이 준비되어 있다.';
+          if (!b.open && b.focusedTurn !== s.turnNo) return '닫힌 새김은 이번 차례에 덧그어야 주문을 준비할 수 있다.';
+          return null;
+        }
+        case 'disarm': {
+          if (!main) return '주 단계가 아니다.';
+          const p = s.powers[a.idx];
+          if (!p) return '대상이 없다.';
+          if (m.ember < NC[p.id].disarm) return '불씨가 부족하다.';
+          return null;
+        }
+        case 'ability':
+          if (!main) return '주 단계가 아니다.';
+          if (m.charge < MD.ability.cost) return '열이 부족하다.';
+          return null;
+        case 'endMain':
+          if (!main) return '주 단계가 아니다.';
+          if (a.order) {
+            const o = a.order.slice().sort(function (x, y) { return x - y; });
+            if (o.length !== m.played.length || o.some(function (v, i) { return v !== i; })) return '버림 순서가 올바르지 않다.';
+          }
+          return null;
+      }
+      return '알 수 없는 행동이다.';
+    }
+
+    function ctxOf(a, mi) {
+      return {
+        mage: mi, ally: a.ally, targets: (a.targets || []).slice(), picks: (a.pick || []).slice(),
+        power: a.power, allyBreach: a.allyBreach, dmgBonus: 0
+      };
+    }
+
+    function act(s, a) {
+      const err = validate(s, a);
+      if (err) return { ok: false, err: err };
+      if (a.type === 'pickMage') {
+        log(s, who(s, a.mage) + '이(가) 와일드 차례를 가져간다.');
+        startMageTurn(s, a.mage);
+        return { ok: true };
+      }
+      const mi = s.active, m = s.mages[mi], MD = MAGES[m.di];
+      switch (a.type) {
+        case 'cast': {
+          const b = m.breaches[a.breach], d = MD.breaches[a.breach];
+          const id = b.prepped;
+          b.prepped = null; b.preppedTurn = -99;
+          log(s, '「' + nm(id) + '」 시전 (' + m.name + ', 새김 ' + (a.breach + 1) + ')');
+          const ctx = ctxOf(a, mi);
+          ctx.dmgBonus = (b.open && d.bonus && d.bonus.type === 'dmg') ? d.bonus.n : 0;
+          applyEffects(s, def(id).effects, ctx);
+          if (!s.over && b.open && d.bonus) {
+            const bn = d.bonus;
+            if (bn.type === 'ember') m.ember += bn.n;
+            else if (bn.type === 'charge') m.charge = cap(s, mi, m.charge + bn.n);
+            else if (bn.type === 'recall') doRecall(s, mi, { op: 'recall', n: bn.n, to: 'top' }, ctx);
+            else if (bn.type === 'heal') applyEffects(s, [{ op: 'heal', n: bn.n }], ctx);
+          }
+          m.discard.push(id);                       // 시전한 주문은 효과가 끝난 뒤 버림 더미 맨 위로
+          if (!s.over) m.charge = cap(s, mi, m.charge + (MD.chargeOnCast || 0));
+          if (!s.over && !castables(s).length) s.phase = 'main';
+          break;
+        }
+        case 'endCast': s.phase = 'main'; break;
+        case 'play': {
+          const id = m.hand.splice(a.idx, 1)[0];
+          m.played.push(id);
+          log(s, '「' + nm(id) + '」 사용: ' + describe(def(id).effects));
+          applyEffects(s, def(id).effects, ctxOf(a, mi));
+          break;
+        }
+        case 'buy':
+          m.ember -= C[a.id].cost; s.supply[a.id]--; m.discard.push(a.id);
+          log(s, m.name + ': 「' + nm(a.id) + '」 획득 (버림 더미 맨 위)'); break;
+        case 'focus': {
+          const d = MD.breaches[a.breach];
+          m.ember -= d.focusCost; m.breaches[a.breach].focusedTurn = s.turnNo;
+          focusBreach(s, mi, a.breach);
+          break;
+        }
+        case 'open': {
+          m.ember -= openCost(s, a.breach);
+          openBreach(s, mi, a.breach);
+          break;
+        }
+        case 'prep': {
+          const id = m.hand.splice(a.idx, 1)[0];
+          const b = m.breaches[a.breach];
+          b.prepped = id; b.preppedTurn = s.turnNo;
+          log(s, '「' + nm(id) + '」 준비 (새김 ' + (a.breach + 1) + ')'); break;
+        }
+        case 'disarm': {
+          const p = s.powers[a.idx];
+          m.ember -= NC[p.id].disarm;
+          s.powers.splice(a.idx, 1); s.nemDiscard.push(p.id);
+          log(s, '징조 [' + nm(p.id) + '] 해제');
+          break;
+        }
+        case 'ability': {
+          m.charge -= MD.ability.cost;
+          log(s, m.name + '의 기술 「' + MD.ability.name + '」');
+          applyEffects(s, MD.ability.effects, ctxOf(a, mi));
+          break;
+        }
+        case 'endMain': {
+          const order = a.order || m.played.map(function (_, i) { return i; });
+          order.forEach(function (i) { m.discard.push(m.played[i]); });
+          m.played = []; m.ember = 0;
+          draw(s, mi, Math.max(0, 5 - m.hand.length));
+          s.lastActive = mi; s.active = -1;
+          advance(s);
+          break;
+        }
+      }
+      // 자기 차례에 쓰러졌다면(자기 피해 등) 그 차례는 거기서 끝난다
+      if (!s.over && s.active >= 0 && s.mages[s.active].exhausted) {
+        s.lastActive = s.active; s.active = -1;
+        advance(s);
+      }
+      return { ok: true };
+    }
+
+    // 지금 누가 행동해야 하는지: 'human' | 'bot' | null(끝남)
+    function controller(s) {
+      if (s.over) return null;
+      if (s.phase === 'wild') {
+        return living(s).some(function (i) { return s.seats[i] === 'human'; }) ? 'human' : 'bot';
+      }
+      return s.active >= 0 ? s.seats[s.active] : null;
+    }
+
+    return {
+      scn: scn, newGame: newGame, act: act, validate: validate,
+      castables: castables, dmgInstances: dmgInstances, openCost: openCost,
+      cur: cur, living: living, mageDef: mdef, controller: controller, nem: nem,
+      poolOf: poolOf, NC: NC, nemeses: Object.keys(NEMS),
+      def: def, name: nm, describe: describe
+    };
+  }
+
+  return { create: create, describe: describe };
+});
+
+</script>
+<script>
+/* 재의 문 (Ashgate) — 일반판 콘텐츠 데이터 (1단계: 지기 4명 · 적 E1 · 공급 카드 30장)
+ * 엔진을 고치지 않고 이 파일만 바꿔서 카드/적/수치/이야기를 교체한다.
+ * 화면 글자는 세계관 용어(지기·새김·덧긋기·열·징조·잿것·종·주린 자). 엔진 내부 이름은 그대로.
+ * 밸런싱 대상 수치는 balance 항목에 모아 둔다.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.AshScenario1 = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  // ---- 카드 작성 도우미 (데이터를 짧게 쓰기 위한 것, 엔진과 무관) ----
+  const gem = (id, name, cost, effects, memo) => ({ id, name, type: 'gem', cost, effects, memo });
+  const relic = (id, name, cost, effects, memo) => ({ id, name, type: 'relic', cost, effects, memo });
+  const spell = (id, name, cost, effects, memo) => ({ id, name, type: 'spell', cost, effects, memo });
+  const E = (op, n, more) => Object.assign({ op, n }, more || {});
+
+  const cards = {};
+  [
+    // 시작 덱 (공용 2 + 지기별 고유 1)
+    { id: 'shard', name: '불씨 조각', type: 'gem', cost: 0, starter: true, effects: [E('ember', 1)] },
+    { id: 'spark', name: '점화', type: 'spell', cost: 0, starter: true, effects: [E('dmg', 2)] },
+    relic('seo_flint', '세오의 부싯돌', 0, [E('ember', 1), E('charge', 1)]),
+    relic('rec_ledger', '기록관의 명부', 0, [E('ember', 1), E('recall', 1, { to: 'top' })]),
+    relic('tow_torch', '망루 횃불', 0, [E('ember', 1), E('heal', 1)]),
+    relic('car_knife', '새김칼', 0, [E('ember', 1), E('focusAlly', 1)]),
+
+    // ---- 보석 10 ----
+    gem('g_coal', '늙은 우물지기의 숯', 2, [E('ember', 1), E('heal', 1)], '식기 전에 먹어.'),
+    gem('g_drifter', '떠돌이의 잿불', 2, [E('ember', 2), E('forget', 1, { from: 'hand' })]),
+    gem('g_smith', '대장간 아이의 불씨', 3, [E('ember', 2)]),
+    gem('g_nurse', '유모의 손난로', 3, [E('ember', 1), E('healMage', 1, { to: 'ally' })]),
+    gem('g_pilgrim', '순례자의 온기', 4, [E('ember', 2), E('charge', 1)]),
+    gem('g_twin', '쌍둥이의 반쪽 불', 4, [E('ember', 2), E('charge', 1, { to: 'ally' })]),
+    gem('g_widow', '과부의 촛농', 4, [E('ember', 1), E('draw', 1)]),
+    gem('g_choir', '성가대의 촛불', 5, [E('ember', 2), E('recall', 1, { to: 'top' })]),
+    gem('g_baker', '제빵사의 화덕', 5, [E('ember', 3)]),
+    gem('g_miner', '광부의 마지막 등', 6, [E('ember', 4)]),
+
+    // ---- 유물 8 ----
+    relic('r_knife', '아이의 나무 칼', 2, [E('dmgMinion', 2)]),
+    relic('r_thread', '기록공의 실', 3, [E('ember', 1), E('recall', 1, { to: 'top' })]),
+    relic('r_whistle', '늙은 순찰병의 호각', 3, [E('peekTurn', 1)]),
+    relic('r_coin', '뱃사공의 동전', 3, [E('ember', 2), E('forget', 1, { from: 'hand', optional: true })]),
+    relic('r_knot', '누군가의 매듭', 4, [E('anchor', 1)]),
+    relic('r_lamp', '산파의 등잔', 4, [E('ember', 1), E('healMage', 2, { to: 'ally' })]),
+    relic('r_key', '문지기의 열쇠', 4, [E('delayPower', 1)]),
+    relic('r_hammer', '성벽 석공의 망치', 5, [E('ember', 1), E('focusAlly', 1)]),
+
+    // ---- 주문 12 ----
+    spell('s_scream', '아이의 비명', 2, [E('dmg', 2), E('charge', 1)]),
+    spell('s_arrow', '사냥꾼의 마지막 화살', 3, [E('dmg', 4)]),
+    spell('s_thief', '도둑의 손버릇', 3, [E('dmg', 2), E('recall', 1, { to: 'hand', pick: 'top' })]),
+    spell('s_rage', '대장장이의 분노', 4, [E('dmg', 2), E('dmg', 3)]),
+    spell('s_prayer', '수녀의 잿빛 기도', 4, [E('heal', 3), E('dmg', 2)]),
+    spell('s_laugh', '광인의 웃음', 4, [E('dmg', 5), E('hitSelf', 1)]),
+    spell('s_tail', '행렬의 끝자락', 4, [E('dmg', 3), E('hunger', -1)]),
+    spell('s_breath', '병사의 마지막 숨', 5, [E('dmg', 4), E('healMage', 1, { to: 'ally' })]),
+    spell('s_promise', '연인의 약속', 5, [E('dmg', 3), E('draw', 1, { to: 'ally' })]),
+    spell('s_oblivion', '늙은 사제의 망각', 5, [E('dmg', 6), E('forget', 1, { from: 'hand' })]),
+    spell('s_star', '별지기의 추락', 6, [E('dmg', 7)]),
+    spell('s_choirdead', '망자의 합창', 7, [E('dmgAll', 3)]),
+
+    // 레거시로만 들어오는 카드 (공급처에는 없다)
+    { id: 'sera_lamp', name: '세라의 등불', type: 'relic', cost: 0, legacyOnly: true, effects: [E('ember', 2), E('healMage', 1)] }
+  ].forEach(c => { cards[c.id] = c; });
+  // 지기 고유 시작 카드는 공급처에 나오지 않는다
+  ['seo_flint', 'rec_ledger', 'tow_torch', 'car_knife'].forEach(id => { cards[id].starter = true; });
+
+  // ---- 지기 4명 ----
+  const std = (open1, extra) => [
+    { open: true, bonus: null },
+    Object.assign({ open: false, focusCost: 2, openCost: 4 }, extra[0]),
+    Object.assign({ open: false, focusCost: 2, openCost: 5 }, extra[1]),
+    Object.assign({ open: false, focusCost: 3, openCost: 6 }, extra[2])
+  ];
+  const mages = [
+    {
+      id: 'seo', name: '세오', role: '균형 잡힌 피해. 대가로 덱 맨 위 기억을 잊는다.', life: 10, chargeOnCast: 1,
+      startingDeck: { shard: 6, spark: 3, seo_flint: 1 },
+      ability: { name: '불씨 폭주', cost: 4, effects: [E('dmg', 5)], text: '열 4: 피해 5' },
+      breaches: std(true, [
+        { bonus: { type: 'dmg', n: 1 }, bonusText: '시전 시 첫 피해 +1', onOpen: [E('forget', 1, { from: 'deckTop' })], onOpenText: '덱 맨 위 1장 잊음' },
+        { bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [E('forget', 1, { from: 'deckTop' })], onOpenText: '덱 맨 위 1장 잊음' },
+        { bonus: { type: 'charge', n: 1 }, bonusText: '시전 시 열 +1', onOpen: [E('forget', 1, { from: 'deckTop' })], onOpenText: '덱 맨 위 1장 잊음' }
+      ]),
+      bot: {}
+    },
+    {
+      id: 'rec', name: '기록관', role: '기억줄(덱 순서) 조작·동료 지원. 대가로 문이 굶주린다.', life: 9, chargeOnCast: 1,
+      startingDeck: { shard: 6, spark: 3, rec_ledger: 1 },
+      ability: { name: '이름 부르기', cost: 5, effects: [E('recall', 1, { to: 'hand', who: 'ally' }), E('draw', 1, { to: 'ally' })], text: '열 5: 동료가 버림 더미에서 1장을 손으로, 카드 1장 뽑기 (동료가 없으면 자신)' },
+      breaches: std(true, [
+        { bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [E('hunger', 1)], onOpenText: '굶주림 +1' },
+        { bonus: { type: 'charge', n: 1 }, bonusText: '시전 시 열 +1', onOpen: [E('hunger', 1)], onOpenText: '굶주림 +1' },
+        { bonus: { type: 'recall', n: 1 }, bonusText: '시전 시 버림 더미에서 1장 덱 맨 위로', onOpen: [E('hunger', 1)], onOpenText: '굶주림 +1' }
+      ]),
+      bot: {}
+    },
+    {
+      id: 'tow', name: '망대지기', role: '성채 방어·잿것 정리. 대가로 몸(최대 생명)이 깎인다.', life: 12, chargeOnCast: 1,
+      startingDeck: { shard: 6, spark: 3, tow_torch: 1 },
+      ability: { name: '성벽 걷기', cost: 5, effects: [E('heal', 5), E('dmgMinion', 3)], text: '열 5: 성채 +5, 잿것 하나에 피해 3' },
+      breaches: std(true, [
+        { bonus: { type: 'dmg', n: 1 }, bonusText: '시전 시 첫 피해 +1', onOpen: [E('maxLife', 2)], onOpenText: '최대 생명 -2' },
+        { bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [E('maxLife', 2)], onOpenText: '최대 생명 -2' },
+        { bonus: { type: 'heal', n: 1 }, bonusText: '시전 시 성채 +1', onOpen: [E('maxLife', 2)], onOpenText: '최대 생명 -2' }
+      ]),
+      bot: { healBelow: 0.6 }
+    },
+    {
+      id: 'car', name: '새김꾼', role: '동료의 새김을 열어 준다. 자기 새김은 모두 닫힌 채 시작.', life: 9, chargeOnCast: 1, allClosed: true,
+      startingDeck: { shard: 7, spark: 2, car_knife: 1 },
+      ability: { name: '칼끝', cost: 4, effects: [E('openAlly', 1)], text: '열 4: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신)' },
+      breaches: [
+        { open: false, focusCost: 1, openCost: 3, bonus: null },
+        { open: false, focusCost: 2, openCost: 4, bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' },
+        { open: false, focusCost: 2, openCost: 5, bonus: { type: 'charge', n: 1 }, bonusText: '시전 시 열 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' },
+        { open: false, focusCost: 3, openCost: 6, bonus: { type: 'dmg', n: 1 }, bonusText: '시전 시 첫 피해 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' }
+      ],
+      bot: { allySupport: true }
+    }
+  ];
+
+  // ---- 적 ----
+  const nemeses = {
+    e1: {
+      id: 'e1', name: '굶주린 문', life: 60, blurb: '입문용. 들숨(격화)이 쌓여 문턱에 닿으면 성채를 삼킨다.',
+      epitaph: { win: '문이 닫혔다. 연기가 멎는다.', lose: '등불이 하나씩 꺼진다. 벨란은 조용해졌다.', after: '닫힌 문 아래에서는 아직 무언가 숨을 고른다.' },
+      // 굶주림: 격화(unleash)가 발동할 때마다 +step, threshold에 닿으면 삼킴(strike)
+      unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3)] },
+      targeting: 'random',
+      deck: {
+        e1_breath: 3, e1_claw: 2, e1_ceiling: 2, e1_inhale: 2,
+        e1_door: 2, e1_song: 1,
+        e1_ash: 2, e1_wolf: 1, e1_bell: 1
+      },
+      cards: {
+        e1_breath:  { id: 'e1_breath',  kind: 'attack', name: '문틈의 숨결',   effects: [E('hitGrave', 2), E('unleash', 1)] },
+        e1_claw:    { id: 'e1_claw',    kind: 'attack', name: '굶주린 손톱',   effects: [E('hitMage', 2)] },
+        e1_ceiling: { id: 'e1_ceiling', kind: 'attack', name: '무너지는 천장', effects: [E('hitGrave', 2), E('hitMage', 1, { all: true })] },
+        e1_inhale:  { id: 'e1_inhale',  kind: 'attack', name: '깊은 들숨',     effects: [E('unleash', 2)] },
+        e1_door: { id: 'e1_door', kind: 'power', name: '문이 열린다',   countdown: 3, disarm: 5, effects: [E('hitGrave', 6)] },
+        e1_song: { id: 'e1_song', kind: 'power', name: '굶주림의 노래', countdown: 2, disarm: 4, effects: [E('unleash', 2), E('hitMage', 2)] },
+        e1_ash:  { id: 'e1_ash',  kind: 'minion', name: '재의 하수인', life: 3, each: [E('hitGrave', 1)] },
+        e1_wolf: { id: 'e1_wolf', kind: 'minion', name: '문틈 늑대',   life: 4, each: [E('hitMage', 1)] },
+        e1_bell: { id: 'e1_bell', kind: 'minion', name: '종지기',      life: 5, each: [E('unleash', 1)] }
+      }
+    },
+    e2: {
+      id: 'e2', name: '이름 없는 행렬', life: 75, blurb: '삼킬 때 모두의 버림 더미 맨 위 카드를 먹는다. 이름 없는 자를 처치하면 돌려받는다.',
+      recommended: 'e2',
+      // 이 적 전용 인원별 배율 (전역 scaling보다 우선)
+      scaling: { 1: { nemLife: 1.3 }, 2: { nemLife: 1.4 }, 3: { nemLife: 1.0 }, 4: { nemLife: 2.15 } },
+      epitaph: { win: '행렬이 걸음을 멈춘다. 이름 없는 얼굴들이 하나씩 흩어진다.', lose: '이름이 하나씩 불린다. 대답하는 사람은 없다.', after: '돌아오지 않은 이름들은 아직 문 아래에 쌓여 있다.' },
+      // 삼킴: 성채 -3, 모든 지기의 버림 더미 맨 위 1장이 먹힌다(이번 판에서 제거, 이름 더미로)
+      unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3), E('devour', 1, { who: 'all' })] },
+      targeting: 'random',
+      deck: {
+        e2_step: 3, e2_call: 2, e2_end: 2, e2_tag: 1,
+        e2_march: 2, e2_hand: 1,
+        e2_nameless: 3, e2_clad: 2
+      },
+      cards: {
+        e2_step:  { id: 'e2_step',  kind: 'attack', name: '낯선 발걸음', effects: [E('hitMage', 2), E('unleash', 1)] },
+        e2_call:  { id: 'e2_call',  kind: 'attack', name: '이름 부르기', effects: [E('devour', 1, { who: 'one' })] },
+        e2_end:   { id: 'e2_end',   kind: 'attack', name: '행렬의 끝',   effects: [E('hitGrave', 4)] },
+        e2_tag:   { id: 'e2_tag',   kind: 'attack', name: '빈 명찰',     effects: [E('unleash', 2)] },
+        e2_march: { id: 'e2_march', kind: 'power', name: '행진', countdown: 3, disarm: 5, effects: [E('devour', 2, { who: 'all' })] },
+        e2_hand:  { id: 'e2_hand',  kind: 'power', name: '이름을 새기는 손', countdown: 2, disarm: 4, effects: [E('hitGrave', 4), E('unleash', 1)] },
+        e2_nameless: { id: 'e2_nameless', kind: 'minion', name: '이름 없는 자', life: 4, each: [E('hitGrave', 1)], onDeath: [E('returnDevoured', 1)] },
+        e2_clad:     { id: 'e2_clad',     kind: 'minion', name: '이름을 입은 것', life: 3, lifePlus: 'devoured', each: [E('hitMage', 2)] }
+      }
+    },
+    e3: {
+      id: 'e3', name: '뒤섞는 자', life: 80, blurb: '삼킬 때 한 명의 버림 더미를 섞는다. 종(차례 순서)도 뒤엉킨다.',
+      recommended: 'e3',
+      scaling: { 1: { nemLife: 1.0 }, 2: { nemLife: 1.65 }, 3: { nemLife: 1.3 }, 4: { nemLife: 1.8, graveLife: 0.68 } },
+      epitaph: { win: '말이 제 순서를 찾는다. 뒤섞는 자는 더 이상 말하지 못한다.', lose: '기억을, 너의, 내가, 정리해 주마. 아무도 제 이름을 기억하지 못한다.', after: '순서를 되찾은 기억은 아직 어딘가 한 줄씩 어긋나 있다.' },
+      // 삼킴: 성채 -3, 지기 1명의 버림 더미가 뒤섞인다
+      unleash: { step: 1, threshold: 4, strike: [E('hitGrave', 3), E('scramble', 1, { who: 'one' })] },
+      targeting: 'random',
+      deck: {
+        e3_tangle: 3, e3_reverse: 2, e3_stagger: 2, e3_breath: 1,
+        e3_vortex: 2, e3_syntax: 1,
+        e3_skein: 2, e3_shard: 3
+      },
+      cards: {
+        e3_tangle:  { id: 'e3_tangle',  kind: 'attack', name: '뒤엉킨 말',      effects: [E('hitMage', 2), E('unleash', 1)] },
+        e3_reverse: { id: 'e3_reverse', kind: 'attack', name: '거꾸로 된 기억', effects: [E('scramble', 1, { who: 'one' })] },
+        e3_stagger: { id: 'e3_stagger', kind: 'attack', name: '엇갈린 걸음',   effects: [E('hitGrave', 3), E('reshuffleTurns', 1)] },
+        e3_breath:  { id: 'e3_breath',  kind: 'attack', name: '흐트러진 숨',   effects: [E('unleash', 2)] },
+        e3_vortex:  { id: 'e3_vortex',  kind: 'power', name: '망각의 소용돌이', countdown: 3, disarm: 6, effects: [E('scramble', 1, { who: 'all' }), E('hitGrave', 3)] },
+        e3_syntax:  { id: 'e3_syntax',  kind: 'power', name: '어순 붕괴',       countdown: 2, disarm: 4, effects: [E('unleash', 2), E('hitMage', 3)] },
+        e3_skein:   { id: 'e3_skein',   kind: 'minion', name: '엉킨 실타래', life: 5, each: [E('unleash', 1)] },
+        e3_shard:   { id: 'e3_shard',   kind: 'minion', name: '거울 조각',   life: 3, each: [E('hitMage', 2)] }
+      }
+    }
+  };
+
+  return {
+    id: 'ashgate-1',
+    title: '재의 문',
+    chapter: '일반판',
+
+    story: {
+      intro: [
+        '벨란은 석 달째 밤이 길다.',
+        '성문 아래 바닥이 갈라진 날부터, 불을 꺼도 연기가 올랐다.',
+        '세오는 남은 등불지기 가운데 가장 늦게까지 버틴 사람이다. 세라가 아래로 내려간 지 이틀이 지났다.',
+        '문이 다시 열린다. 성채가 버티는 동안 닫아야 한다.'
+      ],
+      winText: [
+        '문이 닫혔다. 연기가 멎는다.',
+        '닫힌 틈에 세라가 끼어 있다. 숨은 붙어 있다.'
+      ],
+      loseText: ['등불이 하나씩 꺼진다. 벨란은 조용해졌다.'],
+      choice: {
+        prompt: '틈은 오래 버티지 못한다. 세라를 끌어내면 문이 다시 벌어질 수 있다.',
+        options: [
+          {
+            id: 'pull',
+            label: '세라를 끌어낸다',
+            result: '세라가 기침을 하며 눈을 뜬다. 문은 완전히 닫히지 않았다.',
+            legacy: {
+              sera: 'alive',
+              deckAdd: ['sera_lamp'],
+              nemesisAdd: ['e1_door'],
+              summary: ['세라 생존 — 시작 덱에 「세라의 등불」 추가', '문이 덜 닫힘 — 다음 세션 적 덱에 「문이 열린다」 1장 추가']
+            }
+          },
+          {
+            id: 'seal',
+            label: '그대로 두고 봉인한다',
+            result: '틈이 닫힌다. 아래에서 아무 소리도 나지 않는다.',
+            legacy: {
+              sera: 'dead',
+              graveBonus: 5,
+              deckRemove: ['spark'],
+              summary: ['세라 사망', '문이 단단히 봉인됨 — 성채 생명 +5', '술사의 손이 무뎌짐 — 시작 덱에서 「점화」 1장 영구 제거']
+            }
+          }
+        ]
+      }
+    },
+
+    gravehold: { name: '벨란 성채', life: 22 },
+
+    mages: mages,
+    nemeses: nemeses,
+    defaultNemesis: 'e1',
+
+    // 턴 순서 덱(종): 일행마다 1장 + 와일드(부족한 칸) + 적 2장. slots[인원] = 일행 쪽 칸 수.
+    turnDeck: { nemesis: 2, slots: { 1: 3, 2: 3, 3: 3, 4: 4 } },
+
+    // 인원별 배율 (미지정 = 1). 시뮬레이션으로 맞춘다.
+    scaling: { 1: { nemLife: 1.55 }, 2: { nemLife: 1.25 }, 3: { nemLife: 0.95 }, 4: { nemLife: 1.65 } },
+
+    // 난이도: 주린 자 생명 / 성채 생명 배율, 굶주림 시작값, 문턱 보정
+    difficulties: {
+      easy:    { name: '입문',   nemLife: 0.85, graveLife: 1.2 },
+      normal:  { name: '보통' },
+      hard:    { name: '어려움', nemLife: 1.15, hungerStart: 1 },
+      despair: { name: '절망',   nemLife: 1.25, graveLife: 0.9, thresholdDelta: -1 }
+    },
+
+    // 공급처: 추천 세트 (보석 3 + 유물 2 + 주문 4)
+    supply: {
+      gems: ['g_smith', 'g_pilgrim', 'g_baker'],
+      relics: ['r_thread', 'r_lamp'],
+      spells: ['s_arrow', 's_rage', 's_prayer', 's_star']
+    },
+    supplySets: {
+      // E2(먹힘) 대응: 산파의 등잔→누군가의 매듭, 수녀의 잿빛 기도→도둑의 손버릇
+      e2: {
+        gems: ['g_smith', 'g_pilgrim', 'g_baker'],
+        relics: ['r_thread', 'r_knot'],
+        spells: ['s_arrow', 's_rage', 's_thief', 's_star']
+      },
+      // E3(섞임) 대응: E2와 같은 구성 (누군가의 매듭, 도둑의 손버릇)
+      e3: {
+        gems: ['g_smith', 'g_pilgrim', 'g_baker'],
+        relics: ['r_thread', 'r_knot'],
+        spells: ['s_arrow', 's_rage', 's_thief', 's_star']
+      },
+      // 잊음 카드가 많은 세트 (잊음 비용 검증용이자 "압축형" 플레이용)
+      forget: {
+        gems: ['g_drifter', 'g_smith', 'g_baker'],
+        relics: ['r_coin', 'r_thread'],
+        spells: ['s_oblivion', 's_arrow', 's_rage', 's_star']
+      }
+    },
+    supplyCount: { gems: 7, relics: 5, spells: 5 },
+
+    cards: cards,
+
+    // 새 시나리오를 만들 때 이 항목만 채우면 밸런스 도구가 목표 승률에 맞춰 준다.
+    balance: {
+      target: [0.60, 0.75],
+      knobs: ['nemeses.e1.life', 'nemeses.e2.life', 'nemeses.e3.life', 'gravehold.life'],
+      games: 3000
+    }
+  };
+});
+
+</script>
+<script>
+/* 밸런스 측정용 봇. "적당히 합리적으로" 두는 휴리스틱이라 사람보다 약간 못하거나 비슷하다고 가정한다.
+ * 목적은 승률 측정이지 최적 플레이가 아니다. 규칙은 전부 엔진을 통해서만 실행한다.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.AshBot = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  function create(eng, baseCfg) {
+    let cfg = null;
+    const defaults = {
+      disarmAt: 1,          // 힘(Power)의 남은 카운트가 이 이하일 때 해제
+      minDensity: 1.0,      // 덱 평균 불씨가 이보다 낮으면 보석 우선
+      spellTarget: 0.40,    // 덱 중 주문 비율 목표
+      extraSpells: 1,       // 열린 균열 수 + 이 값 이상 주문이 있어야 새 균열을 연다
+      maxWaste: 3,          // 하수인을 잡을 때 허용하는 초과 피해
+      focusPrep: true,
+      forgetMode: 'normal', // normal | aggressive | never — 잊음 카드를 얼마나 쓰는가 (잊음 비용 검증용)
+      healBelow: 0.6,       // 성채 생명이 이 비율 아래면 회복을 중시
+      allySupport: false    // 동료 새김 지원형(새김꾼)
+    };
+    baseCfg = baseCfg || {};
+    const scn = eng.scn, C = scn.cards, NC = eng.NC;
+
+    function sum(effects, op) {
+      return effects.reduce(function (a, e) { return a + (e.op === op ? e.n : 0); }, 0);
+    }
+    function has(c, op) { return c.effects.some(function (e) { return e.op === op; }); }
+    function dmgOf(c) { return sum(c.effects, 'dmg') + sum(c.effects, 'dmgAll') * 1.3; }
+    function forgets(c) { return c.effects.filter(function (e) { return e.op === 'forget'; }); }
+    function ownedCards(s) {
+      const m = eng.cur(s);
+      let all = m.deck.concat(m.hand, m.discard, m.played);
+      m.breaches.forEach(function (b) { if (b.prepped) all.push(b.prepped); });
+      return all;
+    }
+    // 회복 효과를 받을 동료: 살아 있는 다른 일행 중 생명 비율이 가장 낮은 쪽 (없으면 undefined)
+    function closedCount(m) { return m.breaches.filter(function (b) { return !b.open; }).length; }
+    function pickAlly(s) {
+      let best = -1, ratio = 2;
+      eng.living(s).forEach(function (i) {
+        if (i === s.active) return;
+        // 새김 지원형: 닫힌 새김이 많은 동료를 먼저. 그 밖에는 생명 비율이 낮은 동료
+        const r = cfg && cfg.allySupport ? 1 - closedCount(s.mages[i]) / 4 : s.mages[i].life / s.mages[i].max;
+        if (r < ratio) { ratio = r; best = i; }
+      });
+      return best >= 0 ? best : undefined;
+    }
+    function threat(m, s) {
+      const e = NC[m.id].each;
+      // 처치하면 먹힌 카드를 돌려주는 잿것은 먹힌 카드가 있을 때 우선 처치
+      const bonus = NC[m.id].onDeath && s && s.devoured.length ? 3 : 0;
+      return sum(e, 'hitGrave') + sum(e, 'hitMage') * 1.5 + sum(e, 'unleash') * 2 + bonus;
+    }
+    // 이 적이 카드를 먹거나 섞는가 (매듭의 값어치 판단)
+    function attacksDeck(s) {
+      return /"devour"|"scramble"/.test(JSON.stringify(eng.nem(s)));
+    }
+
+    // 피해 한 번 한 번의 대상을 정한다
+    function pickTargets(s, instances) {
+      const targets = [];
+      const minions = s.minions.map(function (m) { return { uid: m.uid, life: m.life, threat: threat(m, s) }; });
+      let nemLeft = s.nemLife;
+      instances.forEach(function (n) {
+        if (nemLeft <= n) { targets.push('N'); nemLeft -= n; return; }
+        const killable = minions
+          .filter(function (m) { return m.life <= n && n - m.life <= cfg.maxWaste; })
+          .sort(function (a, b) { return b.threat - a.threat || b.life - a.life; })[0];
+        if (killable) { targets.push(killable.uid); minions.splice(minions.indexOf(killable), 1); }
+        else { targets.push('N'); nemLeft -= n; }
+      });
+      return targets;
+    }
+
+    function cardScore(s, c, stats) {
+      const needHeal = s.graveLife <= s.graveMax * cfg.healBelow;
+      const multi = s.mages.length > 1;
+      const ember = sum(c.effects, 'ember'), draw = sum(c.effects, 'draw');
+      const heal = sum(c.effects, 'heal'), charge = sum(c.effects, 'charge'), dmg = dmgOf(c);
+      // 보조 효과의 대략적인 값 (동료가 있으면 더 쓸모 있다)
+      let extra = sum(c.effects, 'healMage') * (multi ? 2 : 0.5) + sum(c.effects, 'recall') * 4 + sum(c.effects, 'focusAlly') * (multi ? 5 : 3)
+        + sum(c.effects, 'dmgMinion') * (s.minions.length ? 3 : 1) + sum(c.effects, 'peekTurn') * 1 + sum(c.effects, 'delayPower') * 3
+        - sum(c.effects, 'hitSelf') * 3 + (sum(c.effects, 'hunger') < 0 ? 3 : 0);
+      if (sum(c.effects, 'anchor')) extra += attacksDeck(s) ? 14 : -4;
+      // 잊음: 굶주림 +1이 따라붙는다
+      const fg = forgets(c).filter(function (e) { return !e.optional; }).length;
+      if (cfg.forgetMode === 'never') extra -= fg * 100;
+      else if (cfg.forgetMode === 'aggressive') extra += fg * 6;
+      else extra -= fg * 8;
+      if (c.type === 'spell') {
+        let v = dmg * 8 + heal * (needHeal ? 5 : 1.5) + extra;
+        v += stats.spellFrac < cfg.spellTarget ? 12 : -5;
+        return v;
+      }
+      let v = ember * 10 + draw * (has(c, 'draw') && c.effects.some(function (e) { return e.op === 'draw' && e.to === 'ally'; }) ? 3 : 6) + heal * (needHeal ? 3 : 1) + charge * 3 + extra;
+      if (stats.density < cfg.minDensity) v += 12;
+      return v;
+    }
+    function deckStats(s) {
+      const all = ownedCards(s);
+      let ember = 0, spells = 0;
+      all.forEach(function (id) {
+        const c = eng.def(id);
+        ember += c.effects.reduce(function (a, e) { return a + (e.op === 'ember' ? e.n : 0); }, 0);
+        if (c.type === 'spell') spells++;
+      });
+      return { density: ember / all.length, spellFrac: spells / all.length, spells: spells, total: all.length };
+    }
+
+    function prepAll(s) {
+      const m = eng.cur(s);
+      for (let guard = 0; guard < 12; guard++) {
+        if (s.over) return;
+        let done = true;
+        const spells = [];
+        m.hand.forEach(function (id, i) { if (C[id] && C[id].type === 'spell') spells.push({ id: id, i: i }); });
+        if (!spells.length) return;
+        spells.sort(function (a, b) { return dmgOf(C[b.id]) - dmgOf(C[a.id]); });
+        for (let b = 0; b < m.breaches.length; b++) {
+          const br = m.breaches[b];
+          if (br.prepped || !(br.open || br.focusedTurn === s.turnNo)) continue;
+          const sp = spells[0];
+          if (!sp) return;
+          if (eng.act(s, { type: 'prep', idx: sp.i, breach: b }).ok) { done = false; break; }
+        }
+        if (done) return;
+      }
+    }
+
+    function spend(s) {
+      const m = eng.cur(s), MD = eng.mageDef(s, s.active);
+      for (let guard = 0; guard < 40 && !s.over; guard++) {
+        // a) 곧 터지는 힘(Power) 해제
+        let di = -1, best = 99;
+        s.powers.forEach(function (p, i) {
+          const d = NC[p.id];
+          const value = sum(d.effects, 'hitGrave') + sum(d.effects, 'hitMage') * 1.5 + sum(d.effects, 'unleash') * 2;
+          if (p.tokens <= cfg.disarmAt && d.disarm <= m.ember && value >= d.disarm * 0.9 && p.tokens < best) { di = i; best = p.tokens; }
+        });
+        if (di >= 0) { eng.act(s, { type: 'disarm', idx: di }); continue; }
+
+        // b) 균열 열기: 주문이 충분히 있을 때만
+        const st = deckStats(s);
+        const openCount = m.breaches.filter(function (b) { return b.open; }).length;
+        let ob = -1, oc = 99;
+        m.breaches.forEach(function (b, i) {
+          if (!b.open && eng.openCost(s, i) <= m.ember && eng.openCost(s, i) < oc) { ob = i; oc = eng.openCost(s, i); }
+        });
+        if (ob >= 0 && st.spells >= openCount + cfg.extraSpells) {
+          eng.act(s, { type: 'open', breach: ob }); prepAll(s); continue;
+        }
+
+        // c) 손에 주문이 남았고 열린 균열이 없다면 집중해서 한 번 준비
+        if (cfg.focusPrep) {
+          const hasSpell = m.hand.some(function (id) { return C[id] && C[id].type === 'spell'; });
+          const freeOpen = m.breaches.some(function (b) { return b.open && !b.prepped; });
+          if (hasSpell && !freeOpen) {
+            let fb = -1;
+            m.breaches.forEach(function (b, i) {
+              if (fb < 0 && !b.open && !b.prepped && MD.breaches[i].focusCost <= m.ember) fb = i;
+            });
+            if (fb >= 0) { eng.act(s, { type: 'focus', breach: fb }); prepAll(s); continue; }
+          }
+        }
+
+        // d) 구매
+        let pick = null, pickScore = -1e9;
+        Object.keys(s.supply).forEach(function (id) {
+          if (!(s.supply[id] > 0) || C[id].cost > m.ember) return;
+          const sc = cardScore(s, C[id], st) + C[id].cost * 0.01;
+          if (sc > pickScore) { pickScore = sc; pick = id; }
+        });
+        if (pick) { eng.act(s, { type: 'buy', id: pick }); continue; }
+        break;
+      }
+    }
+
+    // 기술을 쓸 만한가: 동료 새김을 여는 기술은 열 새김이 있을 때만, 회복은 필요할 때만
+    function abilityUseful(s) {
+      const MD = eng.mageDef(s, s.active), m = eng.cur(s);
+      return MD.ability.effects.every(function (e) {
+        if (e.op === 'openAlly') {
+          const t = pickAlly(s);
+          const tm = t == null ? m : s.mages[t];
+          return tm.breaches.some(function (b) { return !b.open; });
+        }
+        if (e.op === 'heal') return s.graveLife < s.graveMax - 2;
+        return true;
+      });
+    }
+
+    // 와일드 차례: 시전할 주문이 준비된 일행을 우선, 같으면 생명 비율이 높은 쪽
+    function pickWild(s) {
+      let best = -1, bestScore = -1e9;
+      eng.living(s).forEach(function (i) {
+        const m = s.mages[i];
+        const ready = m.breaches.filter(function (b) { return b.prepped; }).length;
+        const sc = ready * 10 + m.life / m.max;
+        if (sc > bestScore) { bestScore = sc; best = i; }
+      });
+      return best;
+    }
+
+    // 지금 행동할 차례인 일행 한 명의 한 차례를 끝까지 둔다 (와일드면 먼저 고른다)
+    function takeTurn(s) {
+      if (s.over) return;
+      if (s.phase === 'wild') {
+        eng.act(s, { type: 'pickMage', mage: pickWild(s) });
+        if (s.over) return;
+      }
+      const m = eng.cur(s);
+      if (!m) return;
+      const MD = eng.mageDef(s, s.active);
+      cfg = Object.assign({}, defaults, baseCfg, MD.bot || {});
+      const me = s.active;           // 차례 도중 탈진 등으로 차례가 넘어가면 그만둔다
+      const gone = function () { return s.over || s.active !== me; };
+      // 시전 단계
+      let guard = 0;
+      while (s.phase === 'cast' && guard++ < 10) {
+        const list = eng.castables(s);
+        if (!list.length) { eng.act(s, { type: 'endCast' }); break; }
+        const bi = list[0];
+        eng.act(s, { type: 'cast', breach: bi, targets: pickTargets(s, eng.dmgInstances(s, bi)), ally: pickAlly(s) });
+        if (gone()) return;
+      }
+      if (s.phase === 'cast') eng.act(s, { type: 'endCast' });
+      if (gone()) return;
+      // 주 단계: 낼 수 있는 보석/유물 전부 사용 (뽑기 효과가 있는 유물 먼저)
+      for (guard = 0; guard < 20; guard++) {
+        if (gone()) return;
+        let idx = m.hand.findIndex(function (id) {
+          const c = C[id]; return c && (c.type === 'relic' || c.type === 'gem') && sum(c.effects, 'draw') > 0;
+        });
+        if (idx < 0) idx = m.hand.findIndex(function (id) { const c = C[id]; return c && (c.type === 'relic' || c.type === 'gem'); });
+        if (idx < 0) break;
+        const card = C[m.hand[idx]], act = { type: 'play', idx: idx, ally: pickAlly(s) };
+        if (cfg.forgetMode === 'aggressive' && forgets(card).length) {
+          // 잊을 카드: 나머지 손에서 가장 값싼 카드 (손에서 낸 카드는 이미 빠져 있다)
+          const rest = m.hand.filter(function (_, i) { return i !== idx; });
+          let wi = 0;
+          rest.forEach(function (id, i) { if (C[id].cost < C[rest[wi]].cost || (C[id].cost === C[rest[wi]].cost && C[id].effects.length < C[rest[wi]].effects.length)) wi = i; });
+          if (rest.length) act.pick = [wi];
+        }
+        eng.act(s, act);
+      }
+      if (gone()) return;
+      // 충전이 찼으면 기술
+      if (m.charge >= MD.ability.cost && abilityUseful(s)) {
+        const inst = MD.ability.effects.filter(function (e) { return e.op === 'dmg'; }).map(function (e) { return e.n; });
+        eng.act(s, { type: 'ability', targets: pickTargets(s, inst), ally: pickAlly(s) });
+        if (gone()) return;
+      }
+      prepAll(s);
+      spend(s);
+      if (gone()) return;
+      eng.act(s, { type: 'endMain' });
+    }
+
+    return { takeTurn: takeTurn, get cfg() { return cfg; } };
+  }
+
+  return { create: create };
+});
+
+</script>
+<script>
+/* 재의 문 — 화면(UI) v3. 게임 규칙은 하나도 들어 있지 않고 엔진(AshEngine)과 봇(AshBot)만 호출한다.
+ * 화면: 처음 → 설정(일행·자리·적·공급처·난이도) → 전투 → 결과
+ * 사람 자리가 여럿이면(한 폰 번갈아 하기) 차례가 바뀔 때마다 "지금: ○○" 안내를 띄운다.
+ * AI 자리는 정해진 속도로 자동 진행된다.
+ */
+(function () {
+  'use strict';
+  var scn = AshScenario1;
+  var eng = AshEngine.create(scn);
+  var bot = AshBot.create(eng, {});
+  var KEY_RUN = 'ashgate.run.v3', KEY_CFG = 'ashgate.cfg.v3';
+  var TYPE = { gem: '보석', relic: '유물', spell: '주문' };
+  var NEM_IDS = eng.nemeses;
+  var DIFFS = scn.difficulties;
+  var SPEED = { fast: 150, normal: 650, slow: 1300 };
+
+  // ---------- 저장소 (localStorage가 막혀 있으면 메모리로) ----------
+  var mem = {};
+  function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { mem[k] = JSON.stringify(v); } }
+  function load(k) {
+    try { var t = localStorage.getItem(k); if (t) return JSON.parse(t); } catch (e) { /* 아래로 */ }
+    return mem[k] ? JSON.parse(mem[k]) : null;
+  }
+  function wipe(k) { try { localStorage.removeItem(k); } catch (e) { /* 무시 */ } delete mem[k]; }
+
+  function defaultCfg() {
+    return { party: [{ id: 'seo', seat: 'human' }], nemesis: NEM_IDS[0], supplyMode: 'recommended', custom: null, difficulty: 'normal', speed: 'normal' };
+  }
+  var G = {
+    s: null, screen: 'title', cfg: load(KEY_CFG) || defaultCfg(), modal: null, prepSel: null, toastMsg: '',
+    timer: null, seenN: 0, lastHuman: -1, paused: false
+  };
+  var app = document.getElementById('app');
+
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function pct(a, b) { return Math.max(0, Math.min(100, 100 * a / b)); }
+  function pips(n, max) { var r = ''; for (var i = 0; i < max; i++) r += i < n ? '●' : '○'; return r; }
+  function mdefOf(id) { return scn.mages.find(function (m) { return m.id === id; }); }
+  function nemOf(s) { return scn.nemeses[s.nem]; }
+  function saveRun() { if (G.s && !G.s.over) store(KEY_RUN, { s: G.s, cfg: G.cfg }); }
+  function toast(msg) {
+    G.toastMsg = msg; render();
+    clearTimeout(toast.t);
+    toast.t = setTimeout(function () { G.toastMsg = ''; render(); }, 2600);
+  }
+  function newLines(s, fromN) {
+    var k = Math.min(s.log.length, (s.logN || 0) - fromN);
+    return k > 0 ? s.log.slice(s.log.length - k) : [];
+  }
+  function humanCount(s) { return s.seats.filter(function (x) { return x === 'human'; }).length; }
+
+  // ================= 진행 (사람 ↔ AI) =================
+  // 지금 둘 사람이 누군지 보고, AI 차례면 정해진 속도로 한 차례씩 자동 진행한다.
+  function pump() {
+    clearTimeout(G.timer);
+    var s = G.s;
+    if (!s || G.screen !== 'play') return;
+    if (s.over) { finish(); return; }
+    var who = eng.controller(s);
+    if (who === 'bot') {
+      if (G.paused || G.modal) return;
+      G.timer = setTimeout(function () {
+        if (G.screen !== 'play' || G.s !== s || G.modal) return;
+        bot.takeTurn(s);
+        saveRun(); render(); pump();
+      }, SPEED[G.cfg.speed] || 650);
+      return;
+    }
+    // 사람 차례: 그동안 일어난 일(적 차례 포함)과 "지금 누구" 안내
+    var lines = newLines(s, G.seenN);
+    var enemyHappened = lines.some(function (l) { return l.indexOf('적의 차례') >= 0; });
+    var switched = s.phase !== 'wild' && humanCount(s) > 1 && s.active !== G.lastHuman;
+    if (!G.modal && (enemyHappened || switched || s.phase === 'wild')) {
+      G.modal = {
+        type: 'handoff', lines: enemyHappened ? lines : [],
+        title: s.phase === 'wild' ? '와일드 — 누가 움직일까?' : (switched ? '지금: ' + s.mages[s.active].name + '의 차례' : '그동안 일어난 일')
+      };
+    }
+    if (s.phase !== 'wild') G.lastHuman = s.active;
+    G.seenN = s.logN || 0;
+    render();
+  }
+
+  function finish() {
+    clearTimeout(G.timer);
+    wipe(KEY_RUN);
+    G.screen = 'result'; G.modal = null;
+    render();
+  }
+
+  // 사람의 행동 하나 실행
+  function run(a) {
+    var s = G.s;
+    var r = eng.act(s, a);
+    if (!r.ok) { toast(r.err); return false; }
+    G.prepSel = null; G.modal = null;
+    // 차례를 넘길 때는 seenN을 그대로 둬서, 다음 사람 차례에 "그동안 일어난 일"을 보여 준다
+    if (a.type !== 'endMain' && a.type !== 'pickMage') G.seenN = s.logN || 0;
+    saveRun();
+    if (s.over) { finish(); return true; }
+    render(); pump();
+    return true;
+  }
+
+  function startGame(cfg) {
+    G.cfg = cfg; store(KEY_CFG, cfg);
+    var opts = {
+      party: cfg.party.map(function (p) { return p.id; }),
+      seats: cfg.party.map(function (p) { return p.seat; }),
+      nemesis: cfg.nemesis, difficulty: cfg.difficulty,
+      supply: cfg.supplyMode === 'custom' && cfg.custom ? cfg.custom : cfg.supplyMode
+    };
+    G.s = eng.newGame(opts);
+    G.prepSel = null; G.modal = null; G.paused = false; G.lastHuman = -1; G.seenN = 0;
+    G.screen = 'play';
+    var N = nemOf(G.s);
+    G.modal = { type: 'intro', lines: (scn.story && scn.story.intro) || [], nem: N };
+    saveRun(); render();
+  }
+
+  // ================= 효과 선택 마법사 =================
+  // 카드·기술·시전에 필요한 선택(동료, 동료 새김, 잊을 카드, 회수할 카드, 징조, 피해 대상)을 차례로 묻고 행동을 만든다.
+  function needAlly(effects) {
+    return effects.some(function (e) { return e.to === 'ally' || e.who === 'ally' || e.op === 'focusAlly' || e.op === 'openAlly'; });
+  }
+  function allyCands(s) { return eng.living(s).filter(function (i) { return i !== s.active; }); }
+
+  function startWizard(title, base, effects, opt) {
+    opt = opt || {};
+    var s = G.s;
+    var W = { title: title, base: base, effects: effects, opt: opt, ans: {}, steps: null, i: 0 };
+    if (needAlly(effects)) {
+      var c = allyCands(s);
+      if (c.length === 1) W.ans.ally = c[0];
+      else if (c.length > 1) {
+        W.allyStep = {
+          q: '누구에게? (동료 대상 효과)',
+          opts: c.map(function (k) {
+            var m = s.mages[k];
+            return { v: k, label: m.name, sub: '생명 ' + m.life + '/' + m.max + ' · 열 ' + m.charge + ' · 닫힌 새김 ' + m.breaches.filter(function (b) { return !b.open; }).length };
+          })
+        };
+      }
+    }
+    G.wiz = W;
+    advanceWizard();
+  }
+
+  function buildSteps(W) {
+    var s = G.s, m = s.mages[s.active], steps = [];
+    var tgtIdx = W.ans.ally != null ? W.ans.ally : s.active;
+    var hand = m.hand.filter(function (_, i) { return i !== W.opt.handExclude; });
+    var firstDmg = true;
+    var discardPopped = 0;
+    W.effects.forEach(function (e) {
+      if (e.op === 'focusAlly' || e.op === 'openAlly') {
+        var t = s.mages[tgtIdx], closed = [];
+        t.breaches.forEach(function (b, i) { if (!b.open) closed.push(i); });
+        if (closed.length > 1) steps.push({
+          key: 'allyBreach', q: t.name + '의 어느 새김을 ' + (e.op === 'openAlly' ? '열까?' : '덧그을까?'),
+          opts: closed.map(function (i) {
+            var d = eng.mageDef(s, tgtIdx).breaches[i];
+            return { v: i, label: '새김 ' + (i + 1) + ' (' + t.breaches[i].focus + '/4)', sub: (d.bonusText || '보너스 없음') + (d.onOpenText ? ' · 대가: ' + d.onOpenText : '') };
+          })
+        });
+      } else if (e.op === 'forget' && e.from === 'hand') {
+        if (!hand.length) return;
+        var o = hand.map(function (id, i) { return { v: i, label: eng.name(id), sub: eng.describe(eng.def(id).effects) }; });
+        if (e.optional) o.unshift({ v: null, label: '잊지 않는다', sub: '아무 일도 없다' });
+        steps.push({ key: 'pick', q: '잊을 카드' + (e.optional ? ' (선택)' : ' (필수)') + ' — 잊으면 굶주림 +1', opts: o });
+      } else if (e.op === 'recall') {
+        var who = e.who === 'ally' ? tgtIdx : s.active;
+        if (e.pick === 'top') { discardPopped++; return; }
+        var dis = s.mages[who].discard.slice(0, s.mages[who].discard.length - (who === s.active ? discardPopped : 0));
+        if (dis.length > 1) steps.push({
+          key: 'pick', q: s.mages[who].name + '의 버림 더미에서 ' + (e.to === 'hand' ? '손으로' : '덱 맨 위로') + ' 가져올 카드',
+          opts: dis.map(function (id, i) { return { v: i, label: eng.name(id), sub: (i === dis.length - 1 ? '맨 위 · ' : '') + eng.describe(eng.def(id).effects) }; }).reverse()
+        });
+        else if (dis.length === 1) steps.push({ key: 'pick', auto: 0 });
+      } else if (e.op === 'delayPower') {
+        if (s.powers.length > 1) steps.push({
+          key: 'power', q: '어느 징조를 늦출까?',
+          opts: s.powers.map(function (p, i) { return { v: i, label: eng.name(p.id), sub: '남은 ' + p.tokens + '차례' }; })
+        });
+      } else if (e.op === 'dmg') {
+        var n = e.n + (firstDmg && W.opt.dmgBonus ? W.opt.dmgBonus : 0);
+        firstDmg = false;
+        if (s.minions.length) steps.push({
+          key: 'targets', q: '피해 ' + n + '을(를) 누구에게?',
+          opts: [{ v: 'N', label: nemOf(s).name, sub: '생명 ' + s.nemLife }].concat(s.minions.map(function (mi) {
+            return { v: mi.uid, label: eng.name(mi.id), sub: '잿것 · 생명 ' + mi.life + (mi.life <= n ? ' (처치)' : '') };
+          }))
+        });
+        else steps.push({ key: 'targets', auto: 'N' });
+      } else if (e.op === 'dmgMinion') {
+        if (s.minions.length > 1) steps.push({
+          key: 'targets', q: '피해 ' + e.n + '을(를) 어느 잿것에게?',
+          opts: s.minions.map(function (mi) { return { v: mi.uid, label: eng.name(mi.id), sub: '생명 ' + mi.life }; })
+        });
+      }
+    });
+    // 기록관 눈 새김: 시전 시 회수 보너스 (주문 효과 뒤에 처리된다)
+    if (W.opt.bonusRecall) {
+      var d2 = m.discard.slice(0, m.discard.length - discardPopped);
+      if (d2.length > 1) steps.push({
+        key: 'pick', q: '새김 보너스: 버림 더미에서 덱 맨 위로 올릴 카드',
+        opts: d2.map(function (id, i) { return { v: i, label: eng.name(id), sub: eng.describe(eng.def(id).effects) }; }).reverse()
+      });
+    }
+    return steps;
+  }
+
+  function advanceWizard() {
+    var W = G.wiz;
+    if (W.allyStep && W.ans.ally == null) { G.modal = { type: 'wiz', step: W.allyStep, key: 'ally' }; render(); return; }
+    if (!W.steps) { W.steps = buildSteps(W); W.picks = []; W.targets = []; }
+    while (W.i < W.steps.length) {
+      var st = W.steps[W.i];
+      if (st.auto !== undefined) { answer(st.key, st.auto, true); continue; }
+      G.modal = { type: 'wiz', step: st, key: st.key, n: W.i + 1, total: W.steps.length };
+      render(); return;
+    }
+    // 다 모였다 → 실행
+    var a = Object.assign({}, W.base);
+    if (W.ans.ally != null) a.ally = W.ans.ally;
+    if (W.ans.allyBreach != null) a.allyBreach = W.ans.allyBreach;
+    if (W.ans.power != null) a.power = W.ans.power;
+    if (W.picks.length) a.pick = W.picks;
+    if (W.targets.length) a.targets = W.targets;
+    G.wiz = null; G.modal = null;
+    run(a);
+  }
+  function answer(key, v, auto) {
+    var W = G.wiz;
+    if (key === 'ally') { W.ans.ally = v; advanceWizard(); return; }
+    if (key === 'pick') {
+      if (v === null) W.picks.push(-1);      // 선택 잊음을 하지 않음 → 없는 번호를 넘기면 엔진이 "고르지 않음"으로 처리
+      else W.picks.push(v);
+    } else if (key === 'targets') W.targets.push(v);
+    else W.ans[key] = v;
+    W.i++;
+    if (!auto) advanceWizard();
+  }
+
+  // ================= 화면 조각 =================
+  function cardHTML(id, attrs, cls, extra) {
+    var c = eng.def(id);
+    return '<button class="card ' + c.type + ' ' + (cls || '') + '" ' + (attrs || '') + '>' +
+      (c.cost ? '<span class="cost">' + c.cost + '</span>' : '') +
+      '<span class="nm">' + esc(c.name) + '</span><span class="tp">' + TYPE[c.type] + (extra ? ' · ' + extra : '') + '</span>' +
+      '<span class="ef">' + esc(eng.describe(c.effects)) + '</span>' +
+      (c.memo ? '<span class="memo">“' + esc(c.memo) + '”</span>' : '') + '</button>';
+  }
+
+  function statusHTML(s) {
+    var N = nemOf(s), u = N.unleash;
+    var h = '<div class="stats">' +
+      '<div class="stat boss"><label><span>주린 자 · ' + esc(N.name) + '</span></label><b>' + s.nemLife + ' / ' + s.nemMax + '</b><div class="bar"><i style="width:' + pct(s.nemLife, s.nemMax) + '%"></i></div></div>' +
+      '<div class="stat grave"><label><span>' + esc(scn.gravehold.name) + '</span></label><b>' + s.graveLife + ' / ' + s.graveMax + '</b><div class="bar"><i style="width:' + pct(s.graveLife, s.graveMax) + '%"></i></div></div>' +
+      '<div class="stat"><label><span>굶주림</span><span>가득 차면: ' + esc(eng.describe(u.strike)) + '</span></label><span class="pips hunger">' + pips(s.hunger, s.threshold) + '</span></div>';
+    if (s.devoured && s.devoured.length) h += '<div class="stat"><label><span>이름 더미 (먹힌 카드)</span></label><button class="btn sm" data-act="view" data-v="devoured">' + s.devoured.length + '장 보기</button></div>';
+    return h + '</div>';
+  }
+
+  function turnDeckHTML(s) {
+    var lab = function (t) { return t === 'N' ? '적' : t === 'W' ? '와일드' : s.mages[+t.slice(1)].name; };
+    var cnt = {};
+    s.turnDeck.forEach(function (t) { var l = lab(t); cnt[l] = (cnt[l] || 0) + 1; });
+    var left = Object.keys(cnt).map(function (k) { return '<span class="tk' + (k === '적' ? ' foe' : '') + '">' + esc(k) + (cnt[k] > 1 ? '×' + cnt[k] : '') + '</span>'; }).join('');
+    var used = s.turnDiscard.map(function (t, i) { return '<span class="tk used' + (t === 'N' ? ' foe' : '') + (i === s.turnDiscard.length - 1 ? ' now' : '') + '">' + esc(lab(t)) + '</span>'; }).join('');
+    return '<div class="turns"><span class="dim">종</span> ' + used + '<span class="sep">│ 남은 종</span>' + (left || '<span class="dim">(다 쓰면 다시 섞는다)</span>') +
+      (s.peek ? '<span class="peek">다음: ' + esc(lab(s.peek)) + '</span>' : '') + '</div>';
+  }
+
+  function partyHTML(s) {
+    return '<div class="party">' + s.mages.map(function (m, i) {
+      var D = eng.mageDef(s, i);
+      var br = m.breaches.map(function (b) { return '<i class="' + (b.open ? 'o' : '') + (b.prepped ? ' p' : '') + '">' + (b.open ? '' : b.focus) + '</i>'; }).join('');
+      return '<button class="pm' + (i === s.active ? ' act' : '') + (m.exhausted ? ' ex' : '') + '" data-act="inspect" data-i="' + i + '">' +
+        '<div class="h"><b>' + esc(m.name) + '</b><span class="seat ' + s.seats[i] + '">' + (s.seats[i] === 'human' ? '사람' : 'AI') + '</span></div>' +
+        (m.exhausted ? '<div class="dim">쓰러짐</div>' :
+          '<div class="bar mg"><i style="width:' + pct(m.life, D.life) + '%"></i></div>' +
+          '<div class="mini"><span>생명 ' + m.life + '/' + m.max + '</span><span>열 ' + m.charge + '/' + D.ability.cost + '</span></div>' +
+          '<div class="mini"><span class="brs">' + br + '</span><span>손 ' + m.hand.length + ' · 덱 ' + m.deck.length + ' · 버림 ' + m.discard.length + '</span></div>' +
+          (m.anchor ? '<div class="mini"><span>매듭 ' + m.anchor + '</span></div>' : '')) +
+        '</button>';
+    }).join('') + '</div>';
+  }
+
+  function enemyHTML(s) {
+    var N = nemOf(s);
+    var h = '<div class="enemy"><div class="bossbox"><div class="nm">' + esc(N.name) + '</div><div class="dim sm">' + esc(N.blurb || '') + '</div>' +
+      '<span class="tag">적 덱 ' + s.nemDeck.length + '장</span><span class="tag">버림 ' + s.nemDiscard.length + '장</span><span class="tag">문턱 ' + s.threshold + '</span></div>';
+    var me = s.active >= 0 && s.seats[s.active] === 'human' && s.phase === 'main';
+    s.powers.forEach(function (p, i) {
+      var d = eng.def(p.id);
+      var dis = !me || eng.validate(s, { type: 'disarm', idx: i }) ? ' disabled' : '';
+      h += '<div class="foe power"><div class="cd" title="남은 적 차례">' + p.tokens + '</div><div class="tx"><span class="nm">' + esc(d.name) + '</span><small>징조 · ' + p.tokens + '번의 적 차례 뒤: ' + esc(eng.describe(d.effects)) + '</small></div>' +
+        '<button class="btn sm" data-act="disarm" data-i="' + i + '"' + dis + '>해제 (불씨 ' + d.disarm + ')</button></div>';
+    });
+    s.minions.forEach(function (mi) {
+      var d = eng.def(mi.id);
+      h += '<div class="foe"><div class="cd hp" title="생명">' + mi.life + '</div><div class="tx"><span class="nm">' + esc(d.name) + '</span><small>잿것 · 매 적 차례: ' + esc(eng.describe(d.each)) +
+        (d.onDeath ? ' · 처치 시: ' + esc(eng.describe(d.onDeath)) : '') + '</small></div></div>';
+    });
+    if (!s.powers.length && !s.minions.length) h += '<div class="dim sm">아직 나와 있는 징조나 잿것이 없다.</div>';
+    return h + '</div>';
+  }
+
+  function breachHTML(s, mi, i, mine) {
+    var m = s.mages[mi], b = m.breaches[i], d = eng.mageDef(s, mi).breaches[i];
+    var castable = mine && s.phase === 'cast' && eng.castables(s).indexOf(i) >= 0;
+    var canPrep = mine && G.prepSel != null && !eng.validate(s, { type: 'prep', idx: G.prepSel, breach: i });
+    var body = b.prepped
+      ? '<div class="pp">' + esc(eng.name(b.prepped)) + '<small>' + esc(eng.describe(eng.def(b.prepped).effects)) + ' · ' + (b.preppedTurn < s.turnNo ? '시전 가능' : '다음 차례부터') + '</small></div>'
+      : '<div class="em">' + (b.open || (mine && b.focusedTurn === s.turnNo) ? '주문을 준비할 수 있다' : '닫힘') + '</div>';
+    var acts = '';
+    if (castable) acts += '<button class="btn sm primary" data-act="cast" data-b="' + i + '">시전</button>';
+    if (mine && !b.open && s.phase === 'main') {
+      acts += '<button class="btn sm" data-act="focus" data-b="' + i + '"' + (eng.validate(s, { type: 'focus', breach: i }) ? ' disabled' : '') + '>덧긋기 ' + d.focusCost + '</button>';
+      acts += '<button class="btn sm" data-act="open" data-b="' + i + '"' + (eng.validate(s, { type: 'open', breach: i }) ? ' disabled' : '') + '>열기 ' + eng.openCost(s, i) + '</button>';
+    }
+    return '<div class="breach ' + (b.open ? 'open' : '') + (canPrep ? ' target' : '') + '"' + (canPrep ? ' data-act="prepTo" data-b="' + i + '"' : '') + '>' +
+      '<div class="h"><span>새김 ' + (i + 1) + ' <small>' + ['손등', '팔', '가슴', '눈'][i] + '</small></span><span class="bn">' + (b.open ? '열림' : '닫힘 ' + b.focus + '/4') + '</span></div>' +
+      '<div class="bn">' + (d.bonusText ? esc(d.bonusText) : '보너스 없음') + '</div>' +
+      (d.onOpenText && !b.open ? '<div class="bn cost-t">대가: ' + esc(d.onOpenText) + '</div>' : '') +
+      body + (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div>';
+  }
+
+  function activeHTML(s) {
+    var mi = s.active, m = s.mages[mi], D = eng.mageDef(s, mi);
+    var mine = s.seats[mi] === 'human';
+    var h = '<div class="sect"><h3>' + esc(m.name) + '의 새김</h3><div class="breaches">' +
+      m.breaches.map(function (_, i) { return breachHTML(s, mi, i, mine); }).join('') + '</div></div>';
+    var canAb = mine && !eng.validate(s, { type: 'ability' });
+    h += '<div class="ability"><div><b>기술 「' + esc(D.ability.name) + '」</b> <span class="pips">' + pips(m.charge, D.ability.cost) + '</span><div class="dim sm">' + esc(D.ability.text || eng.describe(D.ability.effects)) + '</div></div>' +
+      (mine ? '<button class="btn sm' + (canAb ? ' primary' : '') + '" data-act="ability"' + (canAb ? '' : ' disabled') + '>사용</button>' : '') + '</div>';
+    var hand = m.hand.map(function (id, i) {
+      var c = eng.def(id), cls = '', attr = mine && s.phase === 'main' ? 'data-act="hand" data-i="' + i + '"' : 'disabled';
+      if (G.prepSel === i) cls = 'sel';
+      return cardHTML(id, attr, cls);
+    }).join('');
+    h += '<div class="sect"><h3>손 (' + m.hand.length + ')' + (mine && s.phase === 'main' ? ' — 보석·유물은 눌러서 사용, 주문은 눌러서 새김에 준비' : '') + '</h3><div class="cards">' + (hand || '<span class="dim sm">손이 비었다</span>') + '</div></div>';
+    if (m.played.length) h += '<div class="sect"><h3>이번 차례에 쓴 카드</h3><div class="disc">' + m.played.map(function (id) { return '<span>' + esc(eng.name(id)) + '</span>'; }).join('') + '</div></div>';
+    h += '<div class="row sm"><button class="btn sm" data-act="view" data-v="discard">버림 더미 ' + m.discard.length + '</button>' +
+      '<span class="dim">덱 ' + m.deck.length + '장 (섞지 않음)</span>' + (m.forgotten.length ? '<button class="btn sm" data-act="view" data-v="forgotten">잊은 카드 ' + m.forgotten.length + '</button>' : '') + '</div>';
+    return h;
+  }
+
+  function supplyHTML(s) {
+    var me = s.active >= 0 && s.seats[s.active] === 'human' && s.phase === 'main';
+    var piles = s.supplyPiles;
+    var ids = piles.gems.concat(piles.relics, piles.spells);
+    return '<div class="sect"><h3>공급처 (불씨로 구매 → 버림 더미 맨 위)</h3><div class="cards">' + ids.map(function (id) {
+      var left = s.supply[id];
+      var dis = !me || eng.validate(s, { type: 'buy', id: id }) ? ' disabled' : '';
+      return cardHTML(id, 'data-act="buy" data-id="' + id + '"' + dis, left ? '' : 'out', '남은 ' + left);
+    }).join('') + '</div></div>';
+  }
+
+  function logHTML(s) {
+    var lines = s.log.slice(-60);
+    return '<div class="sect"><h3>기록</h3><div class="log" id="log">' + lines.map(function (l) {
+      var c = l.indexOf('──') === 0 ? 'h' : /피해를 입었다|삼킨|폭발|쓰러졌다|먹혔다|뒤섞였다|발동/.test(l) ? 'bad' : /회복|해제|돌아왔다|열렸다/.test(l) ? 'good' : '';
+      return '<div class="' + c + '">' + esc(l) + '</div>';
+    }).join('') + '</div></div>';
+  }
+
+  function playHTML() {
+    var s = G.s;
+    var cur = s.active >= 0 ? s.mages[s.active] : null;
+    var human = cur && s.seats[s.active] === 'human';
+    var phaseTx = !cur ? (s.phase === 'wild' ? '와일드: 움직일 지기를 고른다' : '진행 중') : s.phase === 'cast' ? '① 시전 단계' : '② 주 단계';
+    var h = '<div class="topbar"><div class="t">재의 문 <small>' + esc(nemOf(s).name) + ' · ' + esc((DIFFS[s.difficulty] || {}).name || '') + '</small></div>' +
+      '<div class="row"><button class="btn sm" data-act="rules">규칙</button><button class="btn sm" data-act="menu">메뉴</button></div></div>';
+    h += statusHTML(s) + turnDeckHTML(s) + partyHTML(s);
+    h += '<div class="phase">' + (cur ? '<b>' + esc(cur.name) + '</b><span class="seat ' + s.seats[s.active] + '">' + (human ? '사람' : 'AI') + '</span>' : '') +
+      '<span>' + phaseTx + '</span>' + (cur && s.phase === 'main' ? '<span>불씨 <span class="ember">' + cur.ember + '</span></span>' : '') +
+      '<span class="sp"></span>' + (!human && !s.over ? '<span class="dim">AI 진행 중…</span><button class="btn sm" data-act="pause">' + (G.paused ? '계속' : '멈춤') + '</button>' : '') + '</div>';
+    if (human) h += '<p class="hint">' + (s.phase === 'cast' ? '지난 차례에 준비한 주문을 시전한다. 닫힌 새김의 주문은 반드시 시전해야 한다.' : G.prepSel != null ? '주문을 준비할 새김을 누른다 (점선 테두리). 다시 누르면 취소.' : '카드 사용 → 불씨로 구매·덧긋기·열기·징조 해제 → 주문은 새김에 준비 → 차례 종료.') + '</p>';
+    h += '<div class="grid"><div class="colA">' + (cur ? activeHTML(s) : '<div class="panel dim">적 또는 다른 지기의 차례.</div>') + '</div>' +
+      '<div class="side"><div class="colB sect"><h3>주린 자</h3>' + enemyHTML(s) + '</div><div class="colC">' + logHTML(s) + '</div></div></div>';
+    h += supplyHTML(s);
+    if (human) {
+      h += '<div class="actionbar">';
+      if (s.phase === 'cast') h += '<button class="btn" data-act="endCast"' + (eng.validate(s, { type: 'endCast' }) ? ' disabled' : '') + '>시전 마치고 주 단계로</button>';
+      else h += '<div class="row nowrap"><button class="btn primary grow" data-act="endMain">차례 종료 · 손 5장까지 뽑기</button>' +
+        (cur.played.length >= 2 ? '<button class="btn" data-act="order">버릴 순서</button>' : '') + '</div>';
+      h += '</div>';
+    }
+    return h;
+  }
+
+  // ---------- 처음 / 설정 / 결과 ----------
+  function titleHTML() {
+    var r = load(KEY_RUN);
+    return '<div class="center"><h1>재 의 문</h1><div class="sub">문이 숨을 들이켤 때마다, 누군가의 기억이 사라진다.</div>' +
+      '<div class="col"><button class="btn primary" data-act="setup">새 판 준비</button>' +
+      (r ? '<button class="btn" data-act="continue">이어하기 (' + esc(scn.nemeses[r.s.nem].name) + ', 지기 ' + r.s.mages.length + '명)</button>' : '') +
+      '<button class="btn" data-act="rules">규칙 보기</button></div></div>';
+  }
+
+  function setupHTML() {
+    var c = G.cfg;
+    var h = '<div class="setup"><div class="topbar"><div class="t">새 판 준비</div><button class="btn sm" data-act="title">처음으로</button></div>';
+    // 일행
+    h += '<div class="panel sect"><h3>일행 (지기 1~4명) — 자리마다 사람/AI. 사람이 둘 이상이면 한 폰으로 번갈아 한다.</h3>';
+    c.party.forEach(function (p, k) {
+      h += '<div class="slot"><span class="no">' + (k + 1) + '</span><div class="chips">' + scn.mages.map(function (m) {
+        return '<button class="chip' + (p.id === m.id ? ' on' : '') + '" data-act="pmage" data-k="' + k + '" data-id="' + m.id + '">' + esc(m.name) + '</button>';
+      }).join('') + '</div><div class="chips"><button class="chip' + (p.seat === 'human' ? ' on' : '') + '" data-act="pseat" data-k="' + k + '" data-v="human">사람</button>' +
+        '<button class="chip' + (p.seat === 'bot' ? ' on' : '') + '" data-act="pseat" data-k="' + k + '" data-v="bot">AI</button></div>' +
+        (c.party.length > 1 ? '<button class="btn sm" data-act="prm" data-k="' + k + '">빼기</button>' : '') +
+        '<div class="role dim">' + esc((mdefOf(p.id) || {}).role || '') + '</div></div>';
+    });
+    if (c.party.length < 4) h += '<button class="btn sm" data-act="padd">+ 지기 추가</button>';
+    h += '</div>';
+    // 적
+    h += '<div class="panel sect"><h3>주린 자</h3><div class="chips">' + NEM_IDS.map(function (id) {
+      return '<button class="chip' + (c.nemesis === id ? ' on' : '') + '" data-act="nem" data-v="' + id + '">' + esc(scn.nemeses[id].name) + '</button>';
+    }).join('') + '<button class="chip' + (c.nemesis === 'random' ? ' on' : '') + '" data-act="nem" data-v="random">무작위</button></div>' +
+      '<div class="dim sm" style="margin-top:6px">' + esc(c.nemesis === 'random' ? '셋 중 하나가 무작위로 나온다.' : scn.nemeses[c.nemesis].blurb || '') + '</div></div>';
+    // 공급처
+    var sm = [['recommended', '추천'], ['random', '무작위'], ['custom', '직접 고르기']];
+    h += '<div class="panel sect"><h3>공급처 (보석 3 · 유물 2 · 주문 4)</h3><div class="chips">' + sm.map(function (x) {
+      return '<button class="chip' + (c.supplyMode === x[0] ? ' on' : '') + '" data-act="sup" data-v="' + x[0] + '">' + x[1] + '</button>';
+    }).join('') + '</div><div class="dim sm" style="margin-top:6px">' +
+      (c.supplyMode === 'recommended' ? '적마다 맞춘 추천 세트를 쓴다.' : c.supplyMode === 'random' ? '무작위 9더미 (싼 보석·주문은 반드시 포함).' :
+        (c.custom ? esc(['gems', 'relics', 'spells'].map(function (g) { return c.custom[g].map(function (id) { return scn.cards[id].name; }).join(', '); }).join(' / ')) : '아직 고르지 않았다.') +
+        ' <button class="btn sm" data-act="supPick">고르기</button>') + '</div></div>';
+    // 난이도·속도
+    h += '<div class="panel sect"><h3>난이도</h3><div class="chips">' + Object.keys(DIFFS).map(function (k) {
+      return '<button class="chip' + (c.difficulty === k ? ' on' : '') + '" data-act="diff" data-v="' + k + '">' + esc(DIFFS[k].name) + '</button>';
+    }).join('') + '</div><h3 style="margin-top:10px">AI 진행 속도</h3><div class="chips">' + [['fast', '빠르게'], ['normal', '보통'], ['slow', '천천히']].map(function (x) {
+      return '<button class="chip' + (c.speed === x[0] ? ' on' : '') + '" data-act="speed" data-v="' + x[0] + '">' + x[1] + '</button>';
+    }).join('') + '</div></div>';
+    var ok = c.supplyMode !== 'custom' || (c.custom && c.custom.gems.length === 3 && c.custom.relics.length === 2 && c.custom.spells.length === 4);
+    h += '<div class="actionbar"><button class="btn primary" data-act="start"' + (ok ? '' : ' disabled') + '>이 설정으로 시작</button></div></div>';
+    return h;
+  }
+
+  function resultHTML() {
+    var s = G.s, N = nemOf(s), win = s.over === 'win';
+    var ep = N.epitaph || {};
+    return '<div class="center"><h1 class="' + (win ? 'win' : 'lose') + '">' + (win ? '문이 닫혔다' : '등불이 꺼졌다') + '</h1>' +
+      '<div class="story"><p>' + esc(win ? ep.win : ep.lose) + '</p><p class="dim">' + esc(s.reason) + '</p>' + (ep.after ? '<p class="after">후일 — ' + esc(ep.after) + '</p>' : '') + '</div>' +
+      '<div class="panel sm" style="text-align:left">지기 차례 ' + s.turnNo + ' · 적 차례 ' + s.nemTurns + ' · 성채 ' + s.graveLife + '/' + s.graveMax + ' · ' + esc(N.name) + ' ' + s.nemLife + '/' + s.nemMax +
+      '<br>' + s.mages.map(function (m) { return esc(m.name) + (m.exhausted ? ' (쓰러짐)' : ' ' + m.life + '/' + m.max) + (m.forgotten.length ? ' · 잊음 ' + m.forgotten.length : ''); }).join(' · ') + '</div>' +
+      '<div class="col"><button class="btn primary" data-act="again">같은 설정으로 다시</button><button class="btn" data-act="setup">설정 바꾸기</button><button class="btn" data-act="title">처음 화면</button></div></div>';
+  }
+
+  // ---------- 모달 ----------
+  function modalHTML() {
+    var m = G.modal; if (!m) return '';
+    var s = G.s, body = '';
+    var close = '<div class="row end"><button class="btn primary" data-act="close">닫기</button></div>';
+    if (m.type === 'intro') {
+      body = '<h2>' + esc(m.nem.name) + '</h2>' + m.lines.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('') +
+        '<p class="dim">' + esc(m.nem.blurb || '') + '</p><div class="row end"><button class="btn primary" data-act="close">전투 시작</button></div>';
+    } else if (m.type === 'handoff') {
+      body = '<h2>' + esc(m.title) + '</h2>';
+      if (m.lines.length) body += '<div class="log short">' + m.lines.slice(-40).map(function (l) { return '<div class="' + (l.indexOf('──') === 0 ? 'h' : '') + '">' + esc(l) + '</div>'; }).join('') + '</div>';
+      if (s.phase === 'wild') {
+        body += '<div class="col">' + eng.living(s).map(function (k) {
+          var mm = s.mages[k];
+          return '<button class="btn" data-act="wild" data-i="' + k + '">' + esc(mm.name) + ' <span class="dim">(' + (s.seats[k] === 'human' ? '사람' : 'AI') + ' · 생명 ' + mm.life + ' · 준비된 주문 ' + mm.breaches.filter(function (b) { return b.prepped; }).length + ')</span></button>';
+        }).join('') + '</div>';
+      } else body += '<div class="row end"><button class="btn primary" data-act="close">' + (humanCount(s) > 1 ? esc(s.mages[s.active].name) + '(으)로 진행' : '확인') + '</button></div>';
+    } else if (m.type === 'wiz') {
+      var st = m.step, W = G.wiz;
+      body = '<h2>' + esc(W.title) + '</h2><p>' + esc(st.q) + (m.total > 1 ? ' <span class="dim">(' + m.n + '/' + m.total + ')</span>' : '') + '</p><div class="col">' +
+        st.opts.map(function (o, k) { return '<button class="btn opt" data-act="wpick" data-k="' + k + '"><b>' + esc(o.label) + '</b>' + (o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</button>'; }).join('') +
+        '</div><div class="row end"><button class="btn" data-act="wcancel">취소</button></div>';
+    } else if (m.type === 'order') {
+      var cur = s.mages[s.active];
+      body = '<h2>버릴 순서</h2><p class="dim">아래쪽이 버림 더미 맨 위가 된다 (덱이 비면 이 순서 그대로 다시 뽑힌다).</p>' +
+        m.order.map(function (pi, k) {
+          return '<div class="ord"><span class="sp">' + (k + 1) + '. ' + esc(eng.name(cur.played[pi])) + '</span>' +
+            '<button class="btn sm" data-act="oup" data-k="' + k + '"' + (k === 0 ? ' disabled' : '') + '>▲</button><button class="btn sm" data-act="odown" data-k="' + k + '"' + (k === m.order.length - 1 ? ' disabled' : '') + '>▼</button></div>';
+        }).join('') + '<div class="row end"><button class="btn" data-act="close">취소</button><button class="btn primary" data-act="ook">이 순서로 차례 종료</button></div>';
+    } else if (m.type === 'view') {
+      var list = m.list;
+      body = '<h2>' + esc(m.title) + '</h2>' + (list.length ? '<div class="disc">' + list.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : '<p class="dim">비어 있다.</p>') + (m.note ? '<p class="dim sm">' + esc(m.note) + '</p>' : '') + close;
+    } else if (m.type === 'inspect') {
+      var k = m.i, mm = s.mages[k], D = eng.mageDef(s, k);
+      body = '<h2>' + esc(mm.name) + ' <span class="seat ' + s.seats[k] + '">' + (s.seats[k] === 'human' ? '사람' : 'AI') + '</span></h2><p class="dim sm">' + esc(D.role || '') + '</p>' +
+        '<p>생명 ' + mm.life + '/' + mm.max + ' · 열 ' + mm.charge + '/' + D.ability.cost + ' (기술 「' + esc(D.ability.name) + '」: ' + esc(D.ability.text || '') + ')' + (mm.anchor ? ' · 매듭 ' + mm.anchor : '') + '</p>' +
+        '<div class="breaches">' + mm.breaches.map(function (_, i) { return breachHTML(s, k, i, false); }).join('') + '</div>' +
+        '<h3 class="sm dim">손 ' + mm.hand.length + '장</h3><div class="disc">' + mm.hand.map(function (id) { return '<span>' + esc(eng.name(id)) + '</span>'; }).join('') + '</div>' +
+        '<h3 class="sm dim">버림 더미 (오른쪽이 맨 위)</h3><div class="disc">' + mm.discard.map(function (id) { return '<span>' + esc(eng.name(id)) + '</span>'; }).join('') + '</div>' +
+        '<p class="dim sm">덱 ' + mm.deck.length + '장' + (mm.forgotten.length ? ' · 잊은 카드: ' + mm.forgotten.map(eng.name).join(', ') : '') + '</p>' + close;
+    } else if (m.type === 'menu') {
+      body = '<h2>메뉴</h2><div class="col"><button class="btn" data-act="spd">AI 속도: ' + { fast: '빠르게', normal: '보통', slow: '천천히' }[G.cfg.speed] + ' (바꾸기)</button>' +
+        '<button class="btn" data-act="title">처음 화면으로 (전투는 자동 저장됨)</button><button class="btn" data-act="giveup">포기하고 새 판</button><button class="btn primary" data-act="close">닫기</button></div>';
+    } else if (m.type === 'supPick') {
+      var cu = m.sel, pool = eng.poolOf(G.cfg.nemesis === 'random' ? NEM_IDS[0] : G.cfg.nemesis);
+      var need = { gems: 3, relics: 2, spells: 4 }, nm = { gems: '보석', relics: '유물', spells: '주문' };
+      body = '<h2>공급처 직접 고르기</h2>' + ['gems', 'relics', 'spells'].map(function (g) {
+        return '<h3 class="sm">' + nm[g] + ' ' + cu[g].length + '/' + need[g] + '</h3><div class="cards">' + pool[g].map(function (id) {
+          return cardHTML(id, 'data-act="spick" data-g="' + g + '" data-id="' + id + '"', cu[g].indexOf(id) >= 0 ? 'sel' : '');
+        }).join('') + '</div>';
+      }).join('') + '<div class="row end"><button class="btn" data-act="close">취소</button><button class="btn primary" data-act="sok"' +
+        (cu.gems.length === 3 && cu.relics.length === 2 && cu.spells.length === 4 ? '' : ' disabled') + '>이대로</button></div>';
+    } else if (m.type === 'rules') {
+      body = '<h2>규칙 요약</h2><ul>' +
+        '<li><b>목표</b>: 주린 자의 생명을 0으로. 성채가 무너지거나 지기가 모두 쓰러지면 패배.</li>' +
+        '<li><b>종</b>(차례 순서): 지기마다 1장 + 와일드 + 적 2장을 섞어 한 장씩 뒤집는다. 와일드는 아무 지기나 움직인다.</li>' +
+        '<li><b>내 차례</b>: ① 시전 — 지난 차례 새김에 준비한 주문을 쏜다(닫힌 새김의 주문은 필수). ② 주 단계 — 보석·유물을 써서 <b>불씨</b>를 모아 카드 구매, 새김 덧긋기·열기, 징조 해제, 주문 준비. ③ 손을 5장까지 채운다.</li>' +
+        '<li><b>덱은 섞지 않는다</b>: 덱이 비면 버림 더미가 그 순서 그대로 덱이 된다. 그래서 버리는 순서가 중요하다.</li>' +
+        '<li><b>새김</b>: 닫힌 새김은 덧긋기(불씨)할 때마다 열기 비용이 줄고 4번째에 열린다. 덧그은 차례에만 주문을 준비할 수 있다. 열린 새김엔 보너스가 있지만, 열리는 순간 <b>대가</b>를 치른다.</li>' +
+        '<li><b>열</b>: 주문을 시전할 때마다 차오르고, 가득 차면 기술을 쓴다.</li>' +
+        '<li><b>굶주림</b>: 격화 효과마다 차오르고, 문턱에 닿으면 주린 자가 삼킨다. 카드를 <b>잊을</b> 때마다 굶주림 +1.</li>' +
+        '<li><b>징조</b>는 몇 번의 적 차례 뒤에 터진다(불씨로 해제 가능). <b>잿것</b>은 매 적 차례 공격한다.</li>' +
+        '<li><b>동료 대상</b> 효과는 동료가 없으면 자기 자신에게 적용된다.</li></ul>' + close;
+    }
+    return '<div class="ov"><div class="modal">' + body + '</div></div>';
+  }
+
+  // ---------- 그리기 ----------
+  function render() {
+    var h;
+    if (G.screen === 'title') h = titleHTML();
+    else if (G.screen === 'setup') h = setupHTML();
+    else if (G.screen === 'result') h = resultHTML();
+    else h = playHTML();
+    var y = window.scrollY;
+    app.innerHTML = h + modalHTML() + (G.toastMsg ? '<div class="toast">' + esc(G.toastMsg) + '</div>' : '');
+    window.scrollTo(0, y);
+    var lg = document.getElementById('log'); if (lg) lg.scrollTop = lg.scrollHeight;
+  }
+
+  // ---------- 입력 ----------
+  function onHand(i) {
+    var s = G.s, m = s.mages[s.active], c = eng.def(m.hand[i]);
+    if (c.type === 'spell') { G.prepSel = G.prepSel === i ? null : i; render(); return; }
+    startWizard('「' + c.name + '」', { type: 'play', idx: i }, c.effects, { handExclude: i });
+  }
+  function onCast(bi) {
+    var s = G.s, m = s.mages[s.active], b = m.breaches[bi], d = eng.mageDef(s, s.active).breaches[bi];
+    var bonus = b.open && d.bonus;
+    startWizard('「' + eng.name(b.prepped) + '」 시전', { type: 'cast', breach: bi }, eng.def(b.prepped).effects,
+      { dmgBonus: bonus && bonus.type === 'dmg' ? bonus.n : 0, bonusRecall: bonus && bonus.type === 'recall' });
+  }
+  function onAbility() {
+    var s = G.s, D = eng.mageDef(s, s.active);
+    startWizard('기술 「' + D.ability.name + '」', { type: 'ability' }, D.ability.effects, {});
+  }
+
+  app.addEventListener('click', function (ev) {
+    var el = ev.target.closest('[data-act]');
+    if (!el || el.disabled) return;
+    var a = el.getAttribute('data-act'), s = G.s, c = G.cfg;
+    var k = +el.getAttribute('data-k'), v = el.getAttribute('data-v');
+    switch (a) {
+      // 처음 / 설정
+      case 'setup': G.screen = 'setup'; G.modal = null; render(); break;
+      case 'title': clearTimeout(G.timer); G.modal = null; G.screen = 'title'; render(); break;
+      case 'continue': {
+        var r = load(KEY_RUN);
+        if (r) { G.s = r.s; G.cfg = r.cfg || G.cfg; G.screen = 'play'; G.modal = null; G.paused = false; G.lastHuman = -1; G.seenN = r.s.logN || 0; render(); pump(); }
+        break;
+      }
+      case 'pmage': c.party[k].id = el.getAttribute('data-id'); render(); break;
+      case 'pseat': c.party[k].seat = v; render(); break;
+      case 'prm': c.party.splice(k, 1); render(); break;
+      case 'padd': {
+        var used = c.party.map(function (p) { return p.id; });
+        var nx = scn.mages.find(function (m) { return used.indexOf(m.id) < 0; }) || scn.mages[0];
+        c.party.push({ id: nx.id, seat: 'bot' }); render(); break;
+      }
+      case 'nem': c.nemesis = v; render(); break;
+      case 'sup': c.supplyMode = v; if (v === 'custom' && !c.custom) { G.modal = { type: 'supPick', sel: { gems: [], relics: [], spells: [] } }; } render(); break;
+      case 'supPick': G.modal = { type: 'supPick', sel: c.custom ? JSON.parse(JSON.stringify(c.custom)) : { gems: [], relics: [], spells: [] } }; render(); break;
+      case 'spick': {
+        var g = el.getAttribute('data-g'), id = el.getAttribute('data-id'), sel = G.modal.sel[g], lim = { gems: 3, relics: 2, spells: 4 }[g];
+        var at = sel.indexOf(id);
+        if (at >= 0) sel.splice(at, 1); else if (sel.length < lim) sel.push(id); else toast('이 종류는 ' + lim + '더미까지');
+        render(); break;
+      }
+      case 'sok': c.custom = G.modal.sel; c.supplyMode = 'custom'; G.modal = null; render(); break;
+      case 'diff': c.difficulty = v; render(); break;
+      case 'speed': c.speed = v; render(); break;
+      case 'start': startGame(c); break;
+      case 'again': startGame(c); break;
+      // 전투
+      case 'close':
+        G.modal = null; G.prepSel = null; G.wiz = null; render(); pump(); break;
+      case 'rules': G.modal = { type: 'rules' }; render(); break;
+      case 'menu': G.modal = { type: 'menu' }; render(); break;
+      case 'spd': c.speed = { fast: 'normal', normal: 'slow', slow: 'fast' }[c.speed]; store(KEY_CFG, c); render(); break;
+      case 'giveup': wipe(KEY_RUN); clearTimeout(G.timer); G.modal = null; G.screen = 'setup'; render(); break;
+      case 'pause': G.paused = !G.paused; render(); pump(); break;
+      case 'inspect': G.modal = { type: 'inspect', i: +el.getAttribute('data-i') }; render(); break;
+      case 'view': {
+        var cm = s.mages[s.active] || s.mages[0];
+        if (v === 'discard') G.modal = { type: 'view', title: cm.name + '의 버림 더미', list: cm.discard.map(eng.name), note: '오른쪽이 맨 위. 덱이 비면 이 순서 그대로 덱이 된다.' };
+        else if (v === 'forgotten') G.modal = { type: 'view', title: cm.name + '이(가) 잊은 카드', list: cm.forgotten.map(eng.name), note: '이번 판에서 영구히 사라졌다.' };
+        else G.modal = { type: 'view', title: '이름 더미 (먹힌 카드)', list: s.devoured.map(function (d) { return s.mages[d.mage].name + ': ' + eng.name(d.id); }), note: '이름 없는 자를 처치하면 가장 최근 것부터 1장씩 돌아온다.' };
+        render(); break;
+      }
+      case 'wild': G.modal = null; run({ type: 'pickMage', mage: +el.getAttribute('data-i') }); break;
+      case 'hand': onHand(+el.getAttribute('data-i')); break;
+      case 'prepTo': run({ type: 'prep', idx: G.prepSel, breach: +el.getAttribute('data-b') }); break;
+      case 'cast': onCast(+el.getAttribute('data-b')); break;
+      case 'endCast': run({ type: 'endCast' }); break;
+      case 'focus': run({ type: 'focus', breach: +el.getAttribute('data-b') }); break;
+      case 'open': run({ type: 'open', breach: +el.getAttribute('data-b') }); break;
+      case 'buy': run({ type: 'buy', id: el.getAttribute('data-id') }); break;
+      case 'disarm': run({ type: 'disarm', idx: +el.getAttribute('data-i') }); break;
+      case 'ability': onAbility(); break;
+      case 'endMain': run({ type: 'endMain' }); break;
+      case 'order': G.modal = { type: 'order', order: s.mages[s.active].played.map(function (_, i) { return i; }) }; render(); break;
+      case 'oup': case 'odown': {
+        var o = G.modal.order, j = a === 'oup' ? k - 1 : k + 1, t = o[k]; o[k] = o[j]; o[j] = t; render(); break;
+      }
+      case 'ook': { var ord = G.modal.order; G.modal = null; run({ type: 'endMain', order: ord }); break; }
+      case 'wpick': { var st = G.modal.step; answer(G.modal.key, st.opts[k].v); break; }
+      case 'wcancel': G.wiz = null; G.modal = null; render(); break;
+    }
+  });
+
+  window.__ash = { G: G, eng: eng, render: render, pump: pump, startGame: startGame };
+  render();
+})();
+
+</script></body></html>
