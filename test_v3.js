@@ -528,5 +528,60 @@ t('세 적 모두 무작위 공급·모든 난이도에서 짧게 돌려도 안�
   }));
 });
 
+console.log('\n5단계: 연출 사건·버림 순서(산 카드 포함)·다음 손 미리보기');
+t('적 차례 사건: 종 카드 → 적 카드 → 피해가 순서대로 기록되고 foe 표시가 붙는다', () => {
+  const s = game([0], 5); s.mages[0].life = 99; s.graveLife = 99; s.graveMax = 99;
+  s.nemDeck = ['e1_claw']; s.nemDiscard = []; s.tierSizes = [1, 0, 0]; s.tierPass = true; s.powers = []; s.minions = [];
+  s.turnDeck = ['M0', 'N', 'N']; s.turnDiscard = []; main(s, []);
+  const n0 = s.evN; eng.act(s, { type: 'endMain' });
+  assert.ok(s.evN > n0);
+  const evs = s.ev.slice(s.ev.length - (s.evN - n0));
+  const types = evs.map(e => e.t);
+  assert.ok(types.indexOf('foeTurn') >= 0 && types.indexOf('nemCard') > types.indexOf('foeTurn'), types.join());
+  const card = evs.find(e => e.t === 'nemCard'); assert.strictEqual(card.id, 'e1_claw'); assert.strictEqual(card.tier, 1); assert.ok(card.foe);
+  assert.ok(types.indexOf('hitMage') > types.indexOf('nemCard') || types.indexOf('hitGrave') > types.indexOf('nemCard'));
+});
+t('사건 기록은 규칙·난수에 영향이 없다 (같은 시드 = 같은 결과)', () => {
+  const a = simAll(['rec', 'car'], 8, { nemesis: 'e2', difficulty: 'normal' });
+  const b = simAll(['rec', 'car'], 8, { nemesis: 'e2', difficulty: 'normal' });
+  assert.deepStrictEqual(a, b);
+});
+t('버림 순서: 이번 차례에 산 카드도 정렬 대상 (기본 순서는 기존과 동일)', () => {
+  const s = game([0], 3); const m = main(s, ['shard', 'shard', 'shard']);
+  play(s, 0); play(s, 0); play(s, 0);
+  assert.ok(m.ember >= 3, '불씨 ' + m.ember);
+  ok(eng.act(s, { type: 'buy', id: s.supplyPiles.gems[0] }));
+  const buyId = s.supplyPiles.gems[0];
+  const items = eng.orderItems(s, 0);
+  assert.strictEqual(items.length, 4); assert.strictEqual(items[0], buyId);       // 산 카드가 맨 앞(아래), 쓴 카드가 그 뒤
+  const base = m.discard.slice(0, m.discard.length - 1);
+  const s2 = JSON.parse(JSON.stringify(s)), s3 = JSON.parse(JSON.stringify(s));
+  eng.act(s2, { type: 'endMain' });                                                     // 기본
+  const topDef = s2.mages[0].discard.concat(s2.mages[0].deck);
+  eng.act(s3, { type: 'endMain', order: [3, 2, 1, 0] });                                // 산 카드를 맨 위로
+  const d3 = s3.mages[0].discard.concat(s3.mages[0].deck);
+  assert.ok(d3.length === topDef.length);
+  assert.strictEqual(s3.mages[0].discard.length + s3.mages[0].deck.length + s3.mages[0].hand.length, s2.mages[0].discard.length + s2.mages[0].deck.length + s2.mages[0].hand.length);
+});
+t('옛 방식(쓴 카드만의 순서)도 그대로 받아들인다', () => {
+  const s = game([0], 3); main(s, ['shard', 'shard']); play(s, 0); play(s, 0);
+  assert.strictEqual(eng.validate(s, { type: 'endMain', order: [1, 0] }), null);
+  assert.ok(eng.validate(s, { type: 'endMain', order: [0, 1, 2] }));
+});
+t('다음 손 미리보기가 실제 결과와 일치한다', () => {
+  for (let seed = 1; seed <= 12; seed++) {
+    const s = game([0], seed); const m = main(s, null);
+    // 손 일부를 내고, 덱을 짧게 만들어 버림 더미 순서가 보이게 한다
+    const k = Math.min(3, m.hand.length);
+    for (let i = 0; i < k; i++) if (eng.def(m.hand[0]).type !== 'spell') play(s, 0); else break;
+    m.deck = m.deck.slice(0, 2);
+    const items = eng.orderItems(s, 0), ord = items.map((_, i) => i).reverse();
+    const pv = eng.previewHand(s, 0, ord);
+    const s2 = JSON.parse(JSON.stringify(s)); s2.turnDeck = ['M0', 'M0', 'M0']; s2.nemDeck = s2.nemDeck || [];
+    eng.act(s2, { type: 'endMain', order: ord });
+    assert.deepStrictEqual(s2.mages[0].hand, pv.hand, 'seed ' + seed);
+  }
+});
+
 console.log('\n' + pass + ' 통과, ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

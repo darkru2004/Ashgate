@@ -84,6 +84,14 @@
       s.log.push(msg);
       if (s.log.length > 300) s.log.splice(0, s.log.length - 300);
     }
+    // 연출용 사건 기록: 규칙·난수에는 관여하지 않는다. 화면이 evN으로 새 사건만 골라 재생한다.
+    function ev(s, t, d) {
+      const e = d || {}; e.t = t; if (s.foe) e.foe = 1;
+      if (!s.ev) s.ev = [];
+      s.evN = (s.evN || 0) + 1;
+      s.ev.push(e);
+      if (s.ev.length > 240) s.ev.splice(0, s.ev.length - 240);
+    }
     function nem(s) { return NEMS[s.nem]; }
     function cur(s) { return s.active >= 0 ? s.mages[s.active] : null; }
     function mdef(s, mi) { return MAGES[s.mages[mi].di]; }
@@ -303,6 +311,7 @@
       const m = s.mages[mi];
       if (m.exhausted) return;
       m.life -= n;
+      ev(s, 'hitMage', { mi: mi, n: n, hp: Math.max(0, m.life) });
       log(s, who(s, mi) + '이(가) ' + n + ' 피해를 입었다 (' + Math.max(0, m.life) + '/' + m.max + ')');
       if (m.life <= 0) exhaust(s, mi);
     }
@@ -327,9 +336,11 @@
         return;
       }
       s.hunger += n;
+      ev(s, 'hunger', { n: n, v: s.hunger, th: s.threshold });
       if (why) log(s, nem(s).name + '의 굶주림이 깊어진다 (' + s.hunger + '/' + s.threshold + ')');
       while (s.hunger >= s.threshold && !s.over) {
         s.hunger -= s.threshold;
+        ev(s, 'strike', {});
         log(s, nem(s).name + '의 굶주림이 폭발한다!');
         applyEffects(s, (nem(s).unleash && nem(s).unleash.strike) || [], null);
       }
@@ -339,11 +350,12 @@
     // 매듭(anchor)이 있으면 1회 무효로 만들고 매듭만 소모한다.
     function devourFrom(s, mi, n) {
       const m = s.mages[mi];
-      if (m.anchor > 0) { m.anchor--; log(s, who(s, mi) + '의 매듭이 이름을 붙든다. (먹힘 무효)'); return; }
+      if (m.anchor > 0) { m.anchor--; ev(s, 'anchor', { mi: mi, what: 'devour' }); log(s, who(s, mi) + '의 매듭이 이름을 붙든다. (먹힘 무효)'); return; }
       for (let k = 0; k < n; k++) {
         if (!m.discard.length) break;
         const card = m.discard.pop();
         s.devoured.push({ mage: mi, id: card });
+        ev(s, 'devour', { mi: mi, id: card });
         log(s, who(s, mi) + '의 「' + nm(card) + '」이(가) 이름 더미로 먹혔다.');
       }
     }
@@ -359,9 +371,10 @@
     // 섞음: 버림 더미를 시드 난수로 섞는다 (이 게임에서 섞는 유일한 효과). 매듭이 있으면 1회 무효.
     function scrambleOne(s, mi) {
       const m = s.mages[mi];
-      if (m.anchor > 0) { m.anchor--; log(s, who(s, mi) + '의 매듭이 기억의 순서를 붙든다. (섞임 무효)'); return; }
+      if (m.anchor > 0) { m.anchor--; ev(s, 'anchor', { mi: mi, what: 'scramble' }); log(s, who(s, mi) + '의 매듭이 기억의 순서를 붙든다. (섞임 무효)'); return; }
       if (m.discard.length < 2) return;
       shuffle(s, m.discard);
+      ev(s, 'scramble', { mi: mi });
       log(s, who(s, mi) + '의 버림 더미가 뒤섞였다.');
     }
     function doScramble(s, e) {
@@ -531,7 +544,7 @@
             draw(s, e.to === 'ally' ? allyOrSelf(s, ctx) : mi, e.n); break;
           }
           case 'hitGrave':
-            s.graveLife -= e.n; log(s, '성채가 ' + e.n + ' 피해를 입었다 (' + Math.max(0, s.graveLife) + '/' + s.graveMax + ')'); check(s); break;
+            s.graveLife -= e.n; ev(s, 'hitGrave', { n: e.n, hp: Math.max(0, s.graveLife) }); log(s, '성채가 ' + e.n + ' 피해를 입었다 (' + Math.max(0, s.graveLife) + '/' + s.graveMax + ')'); check(s); break;
           case 'hitMage':
             if (e.all) living(s).forEach(function (k) { if (!s.over) hitMage(s, k, e.n); });
             else { const t = pickMageTarget(s); if (t >= 0) hitMage(s, t, e.n); }
@@ -609,6 +622,7 @@
         const t = s.turnDeck.pop();
         s.peek = null;
         s.turnDiscard.push(t);
+        ev(s, 'turnCard', { card: t });
         if (t === 'N') { nemesisTurn(s); continue; }
         if (t === 'W') {
           const alive = living(s);
@@ -626,12 +640,17 @@
     }
     function startMageTurn(s, mi) {
       const m = s.mages[mi];
-      s.active = mi; s.turnNo++; m.ember = 0; m.played = []; s.phase = 'cast';
+      s.active = mi; s.turnNo++; m.ember = 0; m.played = []; m.gained = []; s.phase = 'cast';
       log(s, '── ' + m.name + '의 차례 ' + s.turnNo + ' ──');
       if (!castables(s).length) s.phase = 'main';
     }
     function nemesisTurn(s) {
+      s.foe = true;
+      try { nemesisTurn0(s); } finally { s.foe = false; }
+    }
+    function nemesisTurn0(s) {
       s.nemTurns++; s.active = -1;
+      ev(s, 'foeTurn', { n: s.nemTurns });
       log(s, '── 적의 차례 (' + nem(s).name + ') ──');
       // 1) 메인 단계: 하수인과 힘을 놓인 순서(오래된 것부터)대로 처리
       const items = [];
@@ -645,22 +664,26 @@
           if (s.powers.indexOf(o) < 0) continue;
           o.tokens--;
           if (o.tokens <= 0) {
+            ev(s, 'fire', { id: o.id });
             log(s, '징조 [' + nm(o.id) + '] 발동!');
             s.powers.splice(s.powers.indexOf(o), 1); s.nemDiscard.push(o.id);
             applyEffects(s, NC[o.id].effects, null);
-          } else log(s, '[' + nm(o.id) + '] 남은 ' + o.tokens);
+          } else { ev(s, 'tick', { id: o.id, left: o.tokens }); log(s, '[' + nm(o.id) + '] 남은 ' + o.tokens); }
         } else {
           if (s.minions.indexOf(o) < 0) continue;
+          ev(s, 'minionAct', { id: o.id });
           log(s, nm(o.id) + '의 공격');
           applyEffects(s, NC[o.id].each, null);
         }
       }
       if (s.over) return;
       // 2) 뽑기 단계: 적 카드 한 장 (공격은 즉시 처리, 하수인·힘은 놓는다 — 놓인 차례에는 움직이지 않는다)
-      if (!s.nemDeck.length) { s.nemDeck = shuffle(s, s.nemDiscard); s.nemDiscard = []; if (s.tierPass) { s.tierPass = false; log(s, '적 덱이 다시 섞인다. 이제 단계 없이 무엇이든 나온다.'); } }
+      if (!s.nemDeck.length) { s.nemDeck = shuffle(s, s.nemDiscard); s.nemDiscard = []; if (s.tierPass) { s.tierPass = false; ev(s, 'reshuffle', {}); log(s, '적 덱이 다시 섞인다. 이제 단계 없이 무엇이든 나온다.'); } }
       if (!s.nemDeck.length) { log(s, '적 덱이 비었다.'); return; }
+      const tierNow = nemTier(s);
       const id = s.nemDeck.pop();
       const d = NC[id];
+      ev(s, 'nemCard', { id: id, kind: d.kind, tier: tierNow });
       if (d.kind === 'attack') {
         log(s, '「' + d.name + '」');
         s.nemDiscard.push(id);
@@ -674,6 +697,39 @@
         log(s, '「' + d.name + '」 잿것 등장 (생명 ' + lf + ')');
       }
       if (!s.over && d.onDraw) applyEffects(s, d.onDraw, null);
+    }
+
+    // 차례 끝에 버림 더미로 갈 카드들 (이번 차례 산 카드 + 쓴 카드). 이 목록을 원하는 순서로 늘어놓을 수 있다.
+    // 기본 순서 = 산 카드(아래) → 쓴 카드(위). 산 카드가 이미 버림 더미에서 빠진 경우(회수 등)는 제외한다.
+    function gainedInDiscard(m) {
+      const left = m.discard.slice(), r = [];
+      (m.gained || []).forEach(function (id) { const k = left.lastIndexOf(id); if (k >= 0) { left.splice(k, 1); r.push(id); } });
+      return r;
+    }
+    function orderItems(s, mi) { const m = s.mages[mi]; return gainedInDiscard(m).concat(m.played); }
+    // 차례를 마칠 때 정해진 순서(order: orderItems의 번호 순열)로 정리한 버림 더미를 돌려준다 (상태는 건드리지 않음)
+    function discardAfter(s, mi, order) {
+      const m = s.mages[mi], g = gainedInDiscard(m), items = g.concat(m.played);
+      if (order && order.length === items.length) {
+        const d = m.discard.slice();
+        g.forEach(function (id) { const k = d.lastIndexOf(id); if (k >= 0) d.splice(k, 1); });
+        return d.concat(order.map(function (i) { return items[i]; }));
+      }
+      const o = order && order.length === m.played.length ? order : m.played.map(function (_, i) { return i; });
+      return m.discard.concat(o.map(function (i) { return m.played[i]; }));
+    }
+    // 이 순서로 차례를 끝내면 다음 손이 어떻게 될지 (덱이 비면 버림 더미가 그대로 덱이 된다)
+    function previewHand(s, mi, order) {
+      const m = s.mages[mi];
+      const hand = m.hand.slice(), deck = m.deck.slice();
+      let dis = discardAfter(s, mi, order);
+      const need = Math.max(0, 5 - hand.length), fresh = [];
+      for (let i = 0; i < need; i++) {
+        if (!deck.length && dis.length) { Array.prototype.push.apply(deck, dis); dis = []; fresh.push(hand.length); }
+        if (!deck.length) break;
+        hand.push(deck.shift());
+      }
+      return { hand: hand, kept: m.hand.length, refilledAt: fresh.length ? fresh[0] : -1 };
     }
 
     // ---------- 행동 검증 (UI 버튼 활성/비활성에도 사용) ----------
@@ -751,7 +807,7 @@
           if (!main) return '주 단계가 아니다.';
           if (a.order) {
             const o = a.order.slice().sort(function (x, y) { return x - y; });
-            if (o.length !== m.played.length || o.some(function (v, i) { return v !== i; })) return '버림 순서가 올바르지 않다.';
+            if ((o.length !== m.played.length && o.length !== orderItems(s, s.active).length) || o.some(function (v, i) { return v !== i; })) return '버림 순서가 올바르지 않다.';
           }
           return null;
       }
@@ -804,7 +860,7 @@
           break;
         }
         case 'buy':
-          m.ember -= C[a.id].cost; s.supply[a.id]--; m.discard.push(a.id);
+          m.ember -= C[a.id].cost; s.supply[a.id]--; m.discard.push(a.id); (m.gained = m.gained || []).push(a.id);
           log(s, m.name + ': 「' + nm(a.id) + '」 획득 (버림 더미 맨 위)'); break;
         case 'focus': {
           const d = MD.breaches[a.breach];
@@ -837,8 +893,7 @@
           break;
         }
         case 'endMain': {
-          const order = a.order || m.played.map(function (_, i) { return i; });
-          order.forEach(function (i) { m.discard.push(m.played[i]); });
+          m.discard = discardAfter(s, mi, a.order);
           m.played = []; m.ember = 0;
           draw(s, mi, Math.max(0, 5 - m.hand.length));
           s.lastActive = mi; s.active = -1;
@@ -877,7 +932,8 @@
       castables: castables, dmgInstances: dmgInstances, openCost: openCost,
       cur: cur, living: living, mageDef: mdef, controller: controller, nem: nem,
       poolOf: poolOf, NC: NC, nemeses: Object.keys(NEMS),
-      def: def, name: nm, describe: describe
+      def: def, name: nm, describe: describe,
+      orderItems: orderItems, previewHand: previewHand
     };
   }
 

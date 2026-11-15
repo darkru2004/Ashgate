@@ -20,9 +20,10 @@ async function newPage(browser, vp) {
   await page.reload();
   return page;
 }
-const G = page => page.evaluate(() => { const g = window.__ash.G; return { screen: g.screen, modal: g.modal && g.modal.type, over: g.s && g.s.over, ctrl: g.s && !g.s.over ? window.__ash.eng.controller(g.s) : null, phase: g.s && g.s.phase }; });
+const G = page => page.evaluate(() => { const g = window.__ash.G; return { screen: g.screen, modal: g.modal && g.modal.type, scene: !!g.scene, over: g.s && g.s.over, ctrl: g.s && !g.s.over ? window.__ash.eng.controller(g.s) : null, phase: g.s && g.s.phase }; });
 const click = async (page, sel) => { const l = page.locator(sel + ':not([disabled])').first(); if (await l.count()) { await l.click(); return true; } return false; };
 
+const tab = async (page, v) => { const l = page.locator('[data-act=tab][data-v=' + v + ']'); if (await l.count() && await l.first().isVisible()) await l.first().click(); };
 // 설정 화면에서 일행/적/공급처/난이도 고르기
 async function setup(page, o) {
   await click(page, '[data-act=setup]');
@@ -50,13 +51,17 @@ async function humanTurn(page) {
   let noPrep = false, noBuy = 0;
   for (let g = 0; g < 60; g++) {
     const st = await G(page);
-    if (st.screen !== 'play' || st.ctrl !== 'human') return;
+    if (st.screen !== 'play') return;
+    if (st.scene) { await click(page, '[data-act=sceneNext]'); await page.waitForTimeout(30); continue; }
+    if (st.ctrl !== 'human') return;
     if (st.modal) {
+      if (st.modal === 'order') { await click(page, '[data-act=ook]'); continue; }
       if (await click(page, '[data-act=wild]')) continue;
       if (await click(page, '[data-act=wpick]')) continue;
       if (await click(page, '[data-act=close]')) continue;
       return;
     }
+    await tab(page, 'me');
     if (st.phase === 'cast') {
       if (await click(page, '[data-act=cast]')) continue;
       if (await click(page, '[data-act=endCast]')) continue;
@@ -73,11 +78,14 @@ async function humanTurn(page) {
       if (await page.locator('.card.sel').count()) await page.locator('.card.sel').first().click();   // 준비할 곳이 없으면 선택 취소
     }
     if (await click(page, '[data-act=ability]')) continue;
+    await tab(page, 'foe');
     if (await click(page, '[data-act=disarm]')) continue;
+    await tab(page, 'supply');
     // 가장 비싼 살 수 있는 카드 하나
     const buys = page.locator('[data-act=buy]:not([disabled])');
     const nb = await buys.count();
     if (nb && noBuy++ < 4) { await buys.nth(nb - 1).click(); continue; }
+    await tab(page, 'me');
     if (await click(page, '[data-act=open]')) continue;
     await click(page, '[data-act=endMain]');
     return;
@@ -90,7 +98,8 @@ async function playToEnd(page, label, limitMs) {
   while (Date.now() - t0 < (limitMs || 120000)) {
     const st = await G(page);
     if (st.screen === 'result') break;
-    if (st.ctrl === 'human' || st.modal) { await humanTurn(page); humanTurns++; }
+    if (st.scene) { await click(page, '[data-act=sceneNext]'); await page.waitForTimeout(30); }
+    else if (st.ctrl === 'human' || st.modal) { await humanTurn(page); humanTurns++; }
     else await page.waitForTimeout(60);
   }
   const st = await G(page);
@@ -142,7 +151,7 @@ async function playToEnd(page, label, limitMs) {
         const title = await p.locator('.modal h2').first().textContent();
         if (title.indexOf('지금:') >= 0) { sawSwitch = true; if (!fs.existsSync(SHOT + '/v3_7_handoff.png')) await p.screenshot({ path: SHOT + '/v3_7_handoff.png' }); }
       }
-      if (st.ctrl === 'human' || st.modal) await humanTurn(p); else await p.waitForTimeout(60);
+      if (st.scene) { await click(p, '[data-act=sceneNext]'); await p.waitForTimeout(30); } else if (st.ctrl === 'human' || st.modal) await humanTurn(p); else await p.waitForTimeout(60);
     }
     ok(sawSwitch, '사람 2명: "지금: ○○의 차례" 전환 안내가 나온다');
     ok((await G(p)).screen === 'result', '사람 2명+AI vs E3(어려움, 직접 공급): 결과 화면까지');
@@ -190,6 +199,58 @@ async function playToEnd(page, label, limitMs) {
     const r = await p.evaluate(() => ({ f: window.__ash.G.s.mages[0].forgotten.length, h: window.__ash.G.s.hunger }));
     ok(r.f === 1, '고른 카드가 잊혔다');
     ok(p.errors.length === 0, '이어하기/선택 창: 화면 오류 없음' + (p.errors.length ? ' → ' + p.errors.slice(0, 3).join(' | ') : ''));
+    await p.close();
+  }
+  // 6) 5단계: 버림 순서 화면 · 적 차례 연출 · 되돌리기 · 연출 끄기
+  {
+    const p = await newPage(browser, { width: 390, height: 844 });
+    await setup(p, { party: [['seo', 'human']], nem: 'e1' });
+    await click(p, '[data-act=close]');
+    for (let i = 0; i < 40 && (await G(p)).scene; i++) { await click(p, '[data-act=sceneNext]'); await p.waitForTimeout(40); }
+    ok(!(await G(p)).scene, '시작 때 나온 적 차례 연출을 눌러서 넘길 수 있다');
+    await p.evaluate(() => {
+      const g = window.__ash.G, s = g.s, m = s.mages[0];
+      s.active = 0; s.phase = 'main'; m.hand = ['shard']; m.played = ['spark', 'shard']; m.gained = []; m.ember = 3;
+      m.discard = ['shard']; m.deck = ['shard', 'shard', 'shard', 'shard', 'shard', 'shard'];
+      s.turnDeck = ['M0', 'N']; s.turnDiscard = []; s.nemDeck = ['e1_claw']; s.tierSizes = [1, 0, 0]; s.tierPass = true; s.powers = []; s.minions = [];
+      g.modal = null; g.undo = []; window.__ash.render();
+    });
+    // 되돌리기: 공급처에서 하나 사고 되돌린다
+    await tab(p, 'supply');
+    const e0 = await p.evaluate(() => window.__ash.G.s.mages[0].ember);
+    const buyable = p.locator('[data-act=buy]:not([disabled])');
+    if (await buyable.count()) {
+      await buyable.first().click();
+      ok(await p.locator('[data-act=undo]').count() > 0, '산 뒤에 되돌리기 버튼이 생긴다');
+      await click(p, '[data-act=undo]');
+      ok((await p.evaluate(() => window.__ash.G.s.mages[0].ember)) === e0, '되돌리기로 불씨가 원래대로');
+    } else ok(false, '살 수 있는 카드가 없어 되돌리기를 시험하지 못함');
+    await tab(p, 'me');
+    await click(p, '[data-act=endMain]');
+    ok((await G(p)).modal === 'order', '쓴 카드가 둘 이상이면 버릴 순서 화면이 자동으로 뜬다');
+    await p.screenshot({ path: SHOT + '/v3_9_order.png' });
+    await click(p, '[data-act=oup][data-k="1"]');       // 두 번째 카드를 위로
+    await click(p, '[data-act=ook]');
+    await p.waitForTimeout(200);
+    const orderRes = await p.evaluate(() => { const s = window.__ash.G.s; return { scene: !!window.__ash.G.scene, d: s.mages[0].discard.concat(s.mages[0].deck).slice(0, 3) }; });
+    ok(orderRes.scene, '차례를 마치면 적 차례 연출이 나온다');
+    await p.screenshot({ path: SHOT + '/v3_10_scene.png' });
+    // 카드 장면에서 탭을 기다리는지 → 탭하면 결과 줄이 나온다
+    let waited = false;
+    for (let i = 0; i < 40; i++) {
+      const S = await p.evaluate(() => { const s = window.__ash.G.scene; return s && { wait: s.wait, done: s.done, n: s.lines.length, card: !!s.card }; });
+      if (!S) break;
+      if (S.wait) { waited = true; ok(S.card, '보스 카드가 뒤집힌 채 탭을 기다린다'); await p.screenshot({ path: SHOT + '/v3_11_card.png' }); }
+      await click(p, '[data-act=sceneNext]'); await p.waitForTimeout(60);
+    }
+    ok(waited, '보스 카드 장면에서 탭 대기가 있다');
+    ok(!(await G(p)).scene && (await G(p)).screen === 'play', '연출이 끝나면 다시 내 차례 화면');
+    ok(p.errors.length === 0, '순서·연출·되돌리기: 화면 오류 없음' + (p.errors.length ? ' → ' + p.errors.slice(0, 3).join(' | ') : ''));
+    // 연출 끄기: 연출 없이 바로 진행 (그동안 일어난 일 창으로 대신)
+    await p.evaluate(() => { const g = window.__ash.G; g.cfg.fx = 'off'; const s = g.s, m = s.mages[0]; s.active = 0; s.phase = 'main'; m.hand = []; m.played = []; s.turnDeck = ['M0', 'N']; s.nemDeck = ['e1_claw']; window.__ash.render(); });
+    await click(p, '[data-act=endMain]'); await p.waitForTimeout(200);
+    const off = await G(p);
+    ok(!off.scene, '연출 끄기: 장면이 나오지 않는다');
     await p.close();
   }
   await browser.close();
