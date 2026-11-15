@@ -234,7 +234,7 @@ h1,h2,h3{margin:0}
         case 'forget': return '잊음 ' + (e.from === 'hand' ? '(손) ' : e.from === 'discardTop' ? '(버림 맨 위) ' : '(덱 맨 위) ') + (e.n || 1) + '장' + (e.optional ? ' (선택)' : '');
         case 'recall': return (ally ? '동료 ' : '') + '회수 ' + (e.n || 1) + '장 (' + (e.to === 'hand' ? '손' : '덱 맨 위') + ')';
         case 'focusAlly': return '동료 새김 덧긋기 +' + (e.n || 1);
-        case 'openAlly': return '동료 새김 즉시 열기';
+        case 'openAlly': return '동료 새김 즉시 열기' + (e.fallback ? ' (열 곳이 없으면 ' + describe(e.fallback) + ')' : '');
         case 'maxLife': return '최대 생명 -' + e.n;
         case 'dmgMinion': return '잿것 하나에 피해 ' + e.n;
         case 'dmgAll': return '모든 잿것과 적에게 피해 ' + e.n;
@@ -734,7 +734,10 @@ h1,h2,h3{margin:0}
             if (mi < 0) break;
             const t = allyOrSelf(s, ctx);
             const bi = chooseClosedBreach(s, t, ctx);
-            if (bi < 0) break;
+            if (bi < 0) {                                      // 열 새김이 하나도 없으면 대신 쓰는 효과(있을 때만)
+              if (e.fallback) { log(s, who(s, mi) + ': 열 새김이 없어 다른 효과로 바뀐다.'); applyEffects(s, e.fallback, ctx); }
+              break;
+            }
             if (e.op === 'openAlly') openBreach(s, t, bi);
             else for (let k = 0; k < (e.n || 1) && !s.mages[t].breaches[bi].open; k++) focusBreach(s, t, bi);
             break;
@@ -1177,7 +1180,7 @@ h1,h2,h3{margin:0}
     {
       id: 'car', name: '새김꾼', role: '동료의 새김을 열어 준다. 자기 새김은 모두 닫힌 채 시작.', life: 10, chargeOnCast: 1, allClosed: true,
       startingDeck: { shard: 6, spark: 3, car_knife: 1 },
-      ability: { name: '칼끝', cost: 3, effects: [E('openAlly', 1)], text: '열 3: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신)' },
+      ability: { name: '칼끝', cost: 3, effects: [E('openAlly', 1, { fallback: [E('ember', 2)] })], text: '열 3: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신). 열 곳이 없으면 불씨 +2' },
       breaches: [
         { open: false, focusCost: 1, openCost: 2, bonus: null },
         { open: false, focusCost: 2, openCost: 4, bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' },
@@ -1564,7 +1567,7 @@ h1,h2,h3{margin:0}
         if (e.op === 'openAlly') {
           const t = pickAlly(s);
           const tm = t == null ? m : s.mages[t];
-          return tm.breaches.some(function (b) { return !b.open; });
+          return !!e.fallback || tm.breaches.some(function (b) { return !b.open; });
         }
         if (e.op === 'heal') return s.graveLife < s.graveMax - 2;
         return true;

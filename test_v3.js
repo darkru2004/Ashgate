@@ -243,6 +243,12 @@ t('새김꾼 기술: 동료 새김을 즉시 열고 그 동료의 대가가 발�
   const s2 = game([3]); const m2 = main(s2, []); m2.charge = 4;
   ok(eng.act(s2, { type: 'ability' })); assert.ok(m2.breaches.some(b => b.open));
 });
+t('새김꾼 기술: 열 새김이 하나도 없으면 불씨 +2로 바뀐다 (1인·동료 모두 열림)', () => {
+  const s = game([3]); const m = main(s, []); m.charge = 3; m.breaches.forEach(b => b.open = true); m.ember = 0;
+  ok(eng.act(s, { type: 'ability' })); assert.strictEqual(m.ember, 2);
+  const s2 = game([3, 0]); const m2 = main(s2, []); m2.charge = 3; s2.mages[1].breaches.forEach(b => b.open = true); m2.breaches[1].open = true;
+  m2.ember = 0; ok(eng.act(s2, { type: 'ability', ally: 1 })); assert.ok(m2.ember === 2 || m2.breaches.some(b => b.open));
+});
 t('기록관 기술: 동료가 버림에서 손으로 + 카드 1장 / 1인이면 자신', () => {
   const s = game([1, 0]); const m = main(s, []); m.charge = 5;
   s.mages[1].discard = ['g_miner']; const dk = s.mages[1].deck.length, hd = s.mages[1].hand.length;

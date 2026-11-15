@@ -184,7 +184,7 @@
         if (e.op === 'openAlly') {
           const t = pickAlly(s);
           const tm = t == null ? m : s.mages[t];
-          return tm.breaches.some(function (b) { return !b.open; });
+          return !!e.fallback || tm.breaches.some(function (b) { return !b.open; });
         }
         if (e.op === 'heal') return s.graveLife < s.graveMax - 2;
         return true;

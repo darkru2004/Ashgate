@@ -53,7 +53,7 @@
         case 'forget': return '잊음 ' + (e.from === 'hand' ? '(손) ' : e.from === 'discardTop' ? '(버림 맨 위) ' : '(덱 맨 위) ') + (e.n || 1) + '장' + (e.optional ? ' (선택)' : '');
         case 'recall': return (ally ? '동료 ' : '') + '회수 ' + (e.n || 1) + '장 (' + (e.to === 'hand' ? '손' : '덱 맨 위') + ')';
         case 'focusAlly': return '동료 새김 덧긋기 +' + (e.n || 1);
-        case 'openAlly': return '동료 새김 즉시 열기';
+        case 'openAlly': return '동료 새김 즉시 열기' + (e.fallback ? ' (열 곳이 없으면 ' + describe(e.fallback) + ')' : '');
         case 'maxLife': return '최대 생명 -' + e.n;
         case 'dmgMinion': return '잿것 하나에 피해 ' + e.n;
         case 'dmgAll': return '모든 잿것과 적에게 피해 ' + e.n;
@@ -553,7 +553,10 @@
             if (mi < 0) break;
             const t = allyOrSelf(s, ctx);
             const bi = chooseClosedBreach(s, t, ctx);
-            if (bi < 0) break;
+            if (bi < 0) {                                      // 열 새김이 하나도 없으면 대신 쓰는 효과(있을 때만)
+              if (e.fallback) { log(s, who(s, mi) + ': 열 새김이 없어 다른 효과로 바뀐다.'); applyEffects(s, e.fallback, ctx); }
+              break;
+            }
             if (e.op === 'openAlly') openBreach(s, t, bi);
             else for (let k = 0; k < (e.n || 1) && !s.mages[t].breaches[bi].open; k++) focusBreach(s, t, bi);
             break;

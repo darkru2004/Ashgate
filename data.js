@@ -111,7 +111,7 @@
     {
       id: 'car', name: '새김꾼', role: '동료의 새김을 열어 준다. 자기 새김은 모두 닫힌 채 시작.', life: 10, chargeOnCast: 1, allClosed: true,
       startingDeck: { shard: 6, spark: 3, car_knife: 1 },
-      ability: { name: '칼끝', cost: 3, effects: [E('openAlly', 1)], text: '열 3: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신)' },
+      ability: { name: '칼끝', cost: 3, effects: [E('openAlly', 1, { fallback: [E('ember', 2)] })], text: '열 3: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신). 열 곳이 없으면 불씨 +2' },
       breaches: [
         { open: false, focusCost: 1, openCost: 2, bonus: null },
         { open: false, focusCost: 2, openCost: 4, bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' },
