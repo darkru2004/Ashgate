@@ -212,12 +212,21 @@
       });
       s.nemMax = Math.round(N.life * (sc.nemLife || 1) * (diff.nemLife || 1)); s.nemLife = s.nemMax;
       s.powers = []; s.minions = [];
-      const nd = [];
-      Object.keys(N.deck).forEach(function (id) {
-        for (let i = 0; i < N.deck[id]; i++) nd.push(id);
+      // 적 덱: tiers가 있으면 1단계 → 2단계 → 3단계 순서로 쌓는다(단계 안에서만 섞음). 맨 위(배열 끝)가 1단계.
+      const tiersDef = N.tiers || [N.deck];
+      const adds = (lg.nemesisAdd || []).slice();
+      const tl = tiersDef.map(function (td, ti) {
+        const arr = [];
+        Object.keys(td).forEach(function (id) { for (let i = 0; i < td[id]; i++) arr.push(id); });
+        if (ti === Math.min(1, tiersDef.length - 1)) adds.forEach(function (id) { arr.push(id); });   // 레거시 추가 카드는 2단계(단계가 하나면 그 덱)
+        return arr;
       });
-      (lg.nemesisAdd || []).forEach(function (id) { nd.push(id); });
-      s.nemDeck = shuffle(s, nd); s.nemDiscard = [];
+      if (tl.length > 1 && diff.skipEarly) for (let k = 0; k < diff.skipEarly && tl[0].length > 1; k++) tl[0].splice(Math.floor(rnd(s) * tl[0].length), 1);   // 어려운 난이도: 1단계 카드를 덜어 낸다
+      s.nemDeck = [];
+      for (let ti = tl.length - 1; ti >= 0; ti--) shuffle(s, tl[ti]).forEach(function (id) { s.nemDeck.push(id); });
+      s.nemDiscard = [];
+      s.tierSizes = tl.length > 1 ? tl.map(function (a) { return a.length; }) : null;   // 첫 순환 동안만 단계 표시에 쓴다
+      s.tierPass = tl.length > 1;
 
       // 턴 순서 덱: 일행마다 한 장 + 와일드 + 적 2장
       const slots = ((scn.turnDeck && scn.turnDeck.slots) || {})[n] || defaultSlots(n);
@@ -645,7 +654,7 @@
       }
       if (s.over) return;
       // 2) 뽑기 단계: 적 카드 한 장 (공격은 즉시 처리, 하수인·힘은 놓는다 — 놓인 차례에는 움직이지 않는다)
-      if (!s.nemDeck.length) { s.nemDeck = shuffle(s, s.nemDiscard); s.nemDiscard = []; }
+      if (!s.nemDeck.length) { s.nemDeck = shuffle(s, s.nemDiscard); s.nemDiscard = []; if (s.tierPass) { s.tierPass = false; log(s, '적 덱이 다시 섞인다. 이제 단계 없이 무엇이든 나온다.'); } }
       if (!s.nemDeck.length) { log(s, '적 덱이 비었다.'); return; }
       const id = s.nemDeck.pop();
       const d = NC[id];
@@ -851,8 +860,17 @@
       return s.active >= 0 ? s.seats[s.active] : null;
     }
 
+    // 지금 적 덱 맨 위가 몇 단계인가 (첫 순환 동안만: 1~3, 아니면 0)
+    function nemTier(s) {
+      if (!s.tierPass || !s.tierSizes) return 0;
+      const L = s.nemDeck.length, z = s.tierSizes;
+      let bound = z.reduce(function (a, b) { return a + b; }, 0);
+      for (let i = 0; i < z.length; i++) { bound -= z[i]; if (L > bound) return i + 1; }
+      return z.length;
+    }
+
     return {
-      scn: scn, newGame: newGame, act: act, validate: validate,
+      nemTier: nemTier, scn: scn, newGame: newGame, act: act, validate: validate,
       castables: castables, dmgInstances: dmgInstances, openCost: openCost,
       cur: cur, living: living, mageDef: mdef, controller: controller, nem: nem,
       poolOf: poolOf, NC: NC, nemeses: Object.keys(NEMS),

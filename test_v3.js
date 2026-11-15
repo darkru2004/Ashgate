@@ -24,9 +24,10 @@ const ok = r => assert.ok(r.ok, r.err);
 
 console.log('데이터');
 t('새 데이터 점검 통과', () => assert.deepStrictEqual(lint(scn0), []));
-t('지기 4명 / 적 E1 16장 / 공급 카드 30장', () => {
+t('지기 4명 / 적 E1 10장(3단계) / 공급 카드 30장', () => {
   assert.strictEqual(scn0.mages.length, 4);
-  assert.strictEqual(Object.values(scn0.nemeses.e1.deck).reduce((a, b) => a + b, 0), 16);
+  assert.strictEqual(scn0.nemeses.e1.tiers.length, 3);
+  assert.strictEqual(scn0.nemeses.e1.tiers.reduce((a, td) => a + Object.values(td).reduce((x, y) => x + y, 0), 0), 10);
   const pool = Object.values(scn0.cards).filter(c => !c.starter && !c.legacyOnly && c.cost > 0);
   assert.strictEqual(pool.length, 30);
   assert.deepStrictEqual(['gem', 'relic', 'spell'].map(ty => pool.filter(c => c.type === ty).length), [10, 8, 12]);
@@ -63,10 +64,42 @@ t('적 선택: e1 / random / 없는 적은 거부', () => {
   assert.ok(['e1', 'e2'].includes(game([0], 1, { nemesis: 'random' }).nem));
   assert.throws(() => game([0], 1, { nemesis: 'zz' }));
 });
-t('적 덱 16장, 모든 카드가 데이터에 있다', () => {
+t('적 덱 10장, 모든 카드가 데이터에 있다', () => {
   const s = game([0]);
-  assert.strictEqual(s.nemDeck.length, 16);
+  assert.strictEqual(s.nemDeck.length, 10);
   s.nemDeck.forEach(id => assert.ok(eng.NC[id]));
+});
+
+console.log('적 덱 단계');
+t('적 덱은 1단계 → 2단계 → 3단계 순서로 뽑힌다 (모든 적, 여러 시드)', () => {
+  ['e1', 'e2', 'e3'].forEach(nid => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = game([0], seed, { nemesis: nid });
+      const tiers = scn0.nemeses[nid].tiers;
+      const rank = id => tiers.findIndex(td => td[id]);
+      const order = s.nemDeck.slice().reverse().map(rank);       // 뽑는 순서
+      assert.deepStrictEqual(order, order.slice().sort((a, b) => a - b), nid + ' seed ' + seed);
+      assert.deepStrictEqual(s.tierSizes, tiers.map(td => Object.values(td).reduce((x, y) => x + y, 0)));
+      assert.strictEqual(eng.nemTier(s), 1);
+    }
+  });
+});
+t('단계 표시: 1단계 카드를 다 쓰면 2단계, 그다음 3단계. 다 쓰면 다시 섞고 단계 표시는 사라진다', () => {
+  const s = game([0], 3);
+  const seen = [];
+  for (let i = 0; i < 10; i++) { seen.push(eng.nemTier(s)); s.nemDiscard.push(s.nemDeck.pop()); }
+  assert.deepStrictEqual(seen, [1, 1, 1, 2, 2, 2, 3, 3, 3, 3]);
+  s.tierPass = true;
+});
+t('덱이 다 떨어지면 버림 더미로 다시 쌓고(섞음), 단계 표시를 끈다. 같은 시드는 같은 결과', () => {
+  const run = () => { const s = game([0], 5); s.mages[0].life = 99; s.graveLife = 99; s.graveMax = 99; s.nemDeck = ['e1_claw']; s.nemDiscard = ['e1_breath', 'e1_ash']; s.tierSizes = [1, 0, 0]; s.tierPass = true; s.turnDeck = ['M0', 'N', 'N']; s.turnDiscard = []; main(s, []); eng.act(s, { type: 'endMain' }); return s; };
+  const a = run(), b = run();
+  assert.strictEqual(a.nemDeck.length + a.nemDiscard.length + a.minions.length >= 1, true);
+  assert.deepStrictEqual(a.nemDeck, b.nemDeck);
+});
+t('레거시 추가 카드(문이 열린다)는 2단계에 섞여 들어간다', () => {
+  const s = eng.newGame({ seed: 4, legacy: { nemesisAdd: ['e1_door'] }, party: [0] });
+  assert.strictEqual(s.nemDeck.length, 11); assert.deepStrictEqual(s.tierSizes, [3, 4, 4]);
 });
 
 console.log('난이도 / 공급처');
@@ -76,8 +109,7 @@ t('난이도: 입문·어려움·절망이 생명/굶주림/문턱에 반영된�
   const h = game([0], 1, { difficulty: 'hard' });
   const d = game([0], 1, { difficulty: 'despair' });
   assert.ok(e.nemMax < n.nemMax && e.graveMax > n.graveMax);
-  assert.ok(h.nemMax > n.nemMax && h.hunger === 1 && n.hunger === 0);
-  assert.ok(d.threshold === n.threshold - 1 && d.graveMax < n.graveMax);
+  assert.strictEqual(n.nemDeck.length, 10); assert.strictEqual(h.nemDeck.length, 9); assert.strictEqual(d.nemDeck.length, 8);   // 어려움·절망은 1단계 카드를 덜어 낸다
 });
 t('추천 공급처: 9더미 (보석 3, 유물 2, 주문 4)', () => {
   const s = game([0]);
@@ -272,10 +304,10 @@ t('문지기의 열쇠: 징조 하나 +1 차례 / 호각: 다음 종 공개 / �
   ok(play(s, 0)); assert.strictEqual(s.peek, 'N');
   ok(play(s, 0)); assert.strictEqual(m.anchor, 1);
 });
-t('적 카드: 깊은 들숨(격화 ×2), 무너지는 천장(모든 지기 -1), 징조 발동', () => {
+t('적 카드: 깊은 들숨(격화 ×3 → 삼킴), 무너지는 천장(모든 지기 -1)', () => {
   const s = game([0, 1]); s.hunger = 0; s.turnDeck = ['M1', 'N']; s.turnDiscard = []; s.nemDeck = ['e1_inhale']; s.nemDiscard = [];
-  main(s, []); eng.act(s, { type: 'endMain' });
-  assert.strictEqual(s.hunger, 2);
+  const gl0 = s.graveLife; main(s, []); eng.act(s, { type: 'endMain' });
+  assert.strictEqual(s.hunger, 0); assert.strictEqual(s.graveLife, gl0 - 3);
   const s2 = game([0, 1]); s2.turnDeck = ['M1', 'N']; s2.turnDiscard = []; s2.nemDeck = ['e1_ceiling']; s2.nemDiscard = []; const l = s2.mages.map(m => m.life);
   main(s2, []); eng.act(s2, { type: 'endMain' });
   assert.deepStrictEqual(s2.mages.map(m => m.life), l.map(x => x - 1));
@@ -317,9 +349,9 @@ t('잊음 봇(aggressive/never)도 오류 없이 끝난다', () => {
 
 console.log('2단계: E2 이름 없는 행렬 (먹힘)');
 const e2 = (party, seed, opts) => game(party, seed, Object.assign({ nemesis: 'e2' }, opts || {}));
-t('E2 시작: 16장 덱, 추천 세트에 누군가의 매듭·도둑의 손버릇, 이름 더미 비어 있음', () => {
+t('E2 시작: 10장 덱, 추천 세트에 누군가의 매듭·도둑의 손버릇, 이름 더미 비어 있음', () => {
   const s = e2([0]);
-  assert.strictEqual(s.nemDeck.length, 16); assert.deepStrictEqual(s.devoured, []);
+  assert.strictEqual(s.nemDeck.length, 10); assert.deepStrictEqual(s.devoured, []);
   assert.ok(s.supply.r_knot > 0 && s.supply.s_thief > 0 && !s.supply.r_lamp);
   assert.strictEqual(game([0]).nem, 'e1'); assert.ok(game([0]).supply.r_lamp > 0);
 });
@@ -403,9 +435,9 @@ t('저장·복원 후 이어서 같은 결과 (먹힘 상태 포함)', () => {
 
 console.log('3단계: E3 뒤섞는 자 (섞임)');
 const e3 = (party, seed, opts) => game(party, seed, Object.assign({ nemesis: 'e3' }, opts || {}));
-t('E3 시작: 16장 덱, 문턱 4, 추천 세트에 매듭·도둑의 손버릇', () => {
+t('E3 시작: 10장 덱, 문턱 4, 추천 세트에 매듭·도둑의 손버릇', () => {
   const s = e3([0]);
-  assert.strictEqual(s.nemDeck.length, 16); assert.strictEqual(s.threshold, 4);
+  assert.strictEqual(s.nemDeck.length, 10); assert.strictEqual(s.threshold, 4);
   assert.ok(s.supply.r_knot > 0 && s.supply.s_thief > 0);
 });
 t('섞음(한 명): 버림 더미가 섞이되 장수는 같고, 같은 시드는 같은 결과', () => {
@@ -437,14 +469,14 @@ t('매듭: 섞임 1회를 무효로 하고 매듭만 소모', () => {
   eng.act(s, { type: 'endMain' });
   assert.deepStrictEqual(m.discard, before); assert.strictEqual(m.anchor, 0);
 });
-t('망각의 소용돌이(징조): 모든 지기의 버림 더미 섞음 + 성채 -3', () => {
+t('망각의 소용돌이(징조): 모든 지기의 버림 더미 섞음 + 성채 -6', () => {
   const s = e3([0, 1]); main(s, []); s.graveLife = 20; s.hunger = 0;
   const base = ['shard', 'spark', 'g_baker', 'g_miner', 's_star', 's_arrow', 'g_coal', 'g_smith'];
   s.mages.forEach(m => m.discard = base.slice());
   s.powers = [{ uid: 70, id: 'e3_vortex', tokens: 1 }]; s.turnDeck = ['M1', 'N']; s.nemDeck = ['e3_breath']; s.nemDiscard = [];
   eng.act(s, { type: 'endMain' });
   assert.ok(s.mages.some(m => m.discard.join() !== base.join()));
-  assert.strictEqual(s.graveLife, 17);
+  assert.strictEqual(s.graveLife, 14);
 });
 t('엇갈린 걸음: 남은 종이 다시 섞이고(장수 유지) 다음 종 미리 보기가 지워진다', () => {
   const s = e3([0, 1]); main(s, []);

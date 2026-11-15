@@ -290,7 +290,7 @@
   function enemyHTML(s) {
     var N = nemOf(s);
     var h = '<div class="enemy"><div class="bossbox"><div class="nm">' + esc(N.name) + '</div><div class="dim sm">' + esc(N.blurb || '') + '</div>' +
-      '<span class="tag">적 덱 ' + s.nemDeck.length + '장</span><span class="tag">버림 ' + s.nemDiscard.length + '장</span><span class="tag">문턱 ' + s.threshold + '</span></div>';
+      '<span class="tag">적 덱 ' + s.nemDeck.length + '장' + (eng.nemTier(s) ? ' · ' + eng.nemTier(s) + '단계' : '') + '</span><span class="tag">버림 ' + s.nemDiscard.length + '장</span><span class="tag">문턱 ' + s.threshold + '</span></div>';
     var me = s.active >= 0 && s.seats[s.active] === 'human' && s.phase === 'main';
     s.powers.forEach(function (p, i) {
       var d = eng.def(p.id);

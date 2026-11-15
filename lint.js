@@ -47,7 +47,7 @@ function lint(scn) {
   };
   checkSupply('supply', scn.supply);
   Object.keys(scn.supplySets || {}).forEach(k => checkSupply('supplySets.' + k, scn.supplySets[k]));
-  Object.keys(NEMS).forEach(k => Object.keys(NEMS[k].deck).forEach(id => { if (!NEMS[k].cards[id]) errs.push(k + ' 적 덱에 없는 카드: ' + id); }));
+  Object.keys(NEMS).forEach(k => (NEMS[k].tiers || [NEMS[k].deck]).forEach((td, ti) => Object.keys(td).forEach(id => { if (!NEMS[k].cards[id]) errs.push(k + ' 적 덱(' + (ti + 1) + '단계)에 없는 카드: ' + id); })));
   Object.keys(NC).forEach(id => {
     const c = NC[id];
     if (c.onDraw) checkEff(id + '.onDraw', c.onDraw);

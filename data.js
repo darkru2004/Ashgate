@@ -130,70 +130,77 @@
       // 굶주림: 격화(unleash)가 발동할 때마다 +step, threshold에 닿으면 삼킴(strike)
       unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3)] },
       targeting: 'random',
-      deck: {
-        e1_breath: 3, e1_claw: 2, e1_ceiling: 2, e1_inhale: 2,
-        e1_door: 2, e1_song: 1,
-        e1_ash: 2, e1_wolf: 1, e1_bell: 1
-      },
+      scaling: { 1: { nemLife: 1.3 }, 2: { nemLife: 0.9 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.85 } },
+      // 1단계(약함) → 2단계 → 3단계(강함) 순서로 쌓는다. 단계 안에서만 섞인다.
+      tiers: [
+        { e1_breath: 1, e1_claw: 1, e1_ash: 1 },
+        { e1_ceiling: 1, e1_wolf: 1, e1_song: 1 },
+        { e1_door: 1, e1_bell: 1, e1_maw: 1, e1_inhale: 1 }
+      ],
       cards: {
         e1_breath:  { id: 'e1_breath',  kind: 'attack', name: '문틈의 숨결',   effects: [E('hitGrave', 2), E('unleash', 1)] },
         e1_claw:    { id: 'e1_claw',    kind: 'attack', name: '굶주린 손톱',   effects: [E('hitMage', 2)] },
         e1_ceiling: { id: 'e1_ceiling', kind: 'attack', name: '무너지는 천장', effects: [E('hitGrave', 2), E('hitMage', 1, { all: true })] },
-        e1_inhale:  { id: 'e1_inhale',  kind: 'attack', name: '깊은 들숨',     effects: [E('unleash', 2)] },
-        e1_door: { id: 'e1_door', kind: 'power', name: '문이 열린다',   countdown: 3, disarm: 5, effects: [E('hitGrave', 6)] },
+        e1_inhale:  { id: 'e1_inhale',  kind: 'attack', name: '깊은 들숨',     effects: [E('unleash', 3)] },
+        e1_door: { id: 'e1_door', kind: 'power', name: '문이 열린다',   countdown: 2, disarm: 5, effects: [E('hitGrave', 8)] },
         e1_song: { id: 'e1_song', kind: 'power', name: '굶주림의 노래', countdown: 2, disarm: 4, effects: [E('unleash', 2), E('hitMage', 2)] },
         e1_ash:  { id: 'e1_ash',  kind: 'minion', name: '재의 하수인', life: 3, each: [E('hitGrave', 1)] },
         e1_wolf: { id: 'e1_wolf', kind: 'minion', name: '문틈 늑대',   life: 4, each: [E('hitMage', 1)] },
-        e1_bell: { id: 'e1_bell', kind: 'minion', name: '종지기',      life: 5, each: [E('unleash', 1)] }
+        e1_bell: { id: 'e1_bell', kind: 'minion', name: '종지기',      life: 5, each: [E('unleash', 2)] },
+        e1_maw:  { id: 'e1_maw',  kind: 'attack', name: '벌어진 아가리', effects: [E('hitGrave', 6), E('unleash', 1)] }
       }
     },
     e2: {
       id: 'e2', name: '이름 없는 행렬', life: 75, blurb: '삼킬 때 모두의 버림 더미 맨 위 카드를 먹는다. 이름 없는 자를 처치하면 돌려받는다.',
       recommended: 'e2',
       // 이 적 전용 인원별 배율 (전역 scaling보다 우선)
-      scaling: { 1: { nemLife: 1.3 }, 2: { nemLife: 1.4 }, 3: { nemLife: 1.0 }, 4: { nemLife: 2.15 } },
+      scaling: { 1: { nemLife: 1.05 }, 2: { nemLife: 0.75 }, 3: { nemLife: 0.5 }, 4: { nemLife: 0.8 } },
       epitaph: { win: '행렬이 걸음을 멈춘다. 이름 없는 얼굴들이 하나씩 흩어진다.', lose: '이름이 하나씩 불린다. 대답하는 사람은 없다.', after: '돌아오지 않은 이름들은 아직 문 아래에 쌓여 있다.' },
       // 삼킴: 성채 -3, 모든 지기의 버림 더미 맨 위 1장이 먹힌다(이번 판에서 제거, 이름 더미로)
       unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3), E('devour', 1, { who: 'all' })] },
       targeting: 'random',
-      deck: {
-        e2_step: 3, e2_call: 2, e2_end: 2, e2_tag: 1,
-        e2_march: 2, e2_hand: 1,
-        e2_nameless: 3, e2_clad: 2
-      },
+      tiers: [
+        { e2_step: 1, e2_tag: 1, e2_nameless: 1 },
+        { e2_call: 1, e2_clad: 1, e2_hand: 1 },
+        { e2_end: 1, e2_march: 1, e2_roll: 1, e2_crowd: 1 }
+      ],
       cards: {
         e2_step:  { id: 'e2_step',  kind: 'attack', name: '낯선 발걸음', effects: [E('hitMage', 2), E('unleash', 1)] },
         e2_call:  { id: 'e2_call',  kind: 'attack', name: '이름 부르기', effects: [E('devour', 1, { who: 'one' })] },
-        e2_end:   { id: 'e2_end',   kind: 'attack', name: '행렬의 끝',   effects: [E('hitGrave', 4)] },
+        e2_end:   { id: 'e2_end',   kind: 'attack', name: '행렬의 끝',   effects: [E('hitGrave', 6)] },
         e2_tag:   { id: 'e2_tag',   kind: 'attack', name: '빈 명찰',     effects: [E('unleash', 2)] },
-        e2_march: { id: 'e2_march', kind: 'power', name: '행진', countdown: 3, disarm: 5, effects: [E('devour', 2, { who: 'all' })] },
+        e2_march: { id: 'e2_march', kind: 'power', name: '행진', countdown: 2, disarm: 5, effects: [E('devour', 2, { who: 'all' }), E('hitGrave', 3)] },
         e2_hand:  { id: 'e2_hand',  kind: 'power', name: '이름을 새기는 손', countdown: 2, disarm: 4, effects: [E('hitGrave', 4), E('unleash', 1)] },
         e2_nameless: { id: 'e2_nameless', kind: 'minion', name: '이름 없는 자', life: 4, each: [E('hitGrave', 1)], onDeath: [E('returnDevoured', 1)] },
-        e2_clad:     { id: 'e2_clad',     kind: 'minion', name: '이름을 입은 것', life: 3, lifePlus: 'devoured', each: [E('hitMage', 2)] }
+        e2_clad:     { id: 'e2_clad',     kind: 'minion', name: '이름을 입은 것', life: 3, lifePlus: 'devoured', each: [E('hitMage', 2)] },
+        e2_roll:     { id: 'e2_roll',     kind: 'attack', name: '점호', effects: [E('hitGrave', 4), E('devour', 1, { who: 'all' })] },
+        e2_crowd:    { id: 'e2_crowd',    kind: 'minion', name: '끝없는 행렬', life: 5, each: [E('hitGrave', 2), E('unleash', 1)] }
       }
     },
     e3: {
       id: 'e3', name: '뒤섞는 자', life: 80, blurb: '삼킬 때 한 명의 버림 더미를 섞는다. 종(차례 순서)도 뒤엉킨다.',
       recommended: 'e3',
-      scaling: { 1: { nemLife: 1.0 }, 2: { nemLife: 1.65 }, 3: { nemLife: 1.3 }, 4: { nemLife: 1.8, graveLife: 0.68 } },
+      scaling: { 1: { nemLife: 0.85 }, 2: { nemLife: 0.8 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.72, graveLife: 0.68 } },
       epitaph: { win: '말이 제 순서를 찾는다. 뒤섞는 자는 더 이상 말하지 못한다.', lose: '기억을, 너의, 내가, 정리해 주마. 아무도 제 이름을 기억하지 못한다.', after: '순서를 되찾은 기억은 아직 어딘가 한 줄씩 어긋나 있다.' },
       // 삼킴: 성채 -3, 지기 1명의 버림 더미가 뒤섞인다
       unleash: { step: 1, threshold: 4, strike: [E('hitGrave', 3), E('scramble', 1, { who: 'one' })] },
       targeting: 'random',
-      deck: {
-        e3_tangle: 3, e3_reverse: 2, e3_stagger: 2, e3_breath: 1,
-        e3_vortex: 2, e3_syntax: 1,
-        e3_skein: 2, e3_shard: 3
-      },
+      tiers: [
+        { e3_tangle: 1, e3_breath: 1, e3_shard: 1 },
+        { e3_reverse: 1, e3_skein: 1, e3_stagger: 1 },
+        { e3_vortex: 1, e3_syntax: 1, e3_unmake: 1, e3_mirror: 1 }
+      ],
       cards: {
         e3_tangle:  { id: 'e3_tangle',  kind: 'attack', name: '뒤엉킨 말',      effects: [E('hitMage', 2), E('unleash', 1)] },
         e3_reverse: { id: 'e3_reverse', kind: 'attack', name: '거꾸로 된 기억', effects: [E('scramble', 1, { who: 'one' })] },
         e3_stagger: { id: 'e3_stagger', kind: 'attack', name: '엇갈린 걸음',   effects: [E('hitGrave', 3), E('reshuffleTurns', 1)] },
         e3_breath:  { id: 'e3_breath',  kind: 'attack', name: '흐트러진 숨',   effects: [E('unleash', 2)] },
-        e3_vortex:  { id: 'e3_vortex',  kind: 'power', name: '망각의 소용돌이', countdown: 3, disarm: 6, effects: [E('scramble', 1, { who: 'all' }), E('hitGrave', 3)] },
-        e3_syntax:  { id: 'e3_syntax',  kind: 'power', name: '어순 붕괴',       countdown: 2, disarm: 4, effects: [E('unleash', 2), E('hitMage', 3)] },
+        e3_vortex:  { id: 'e3_vortex',  kind: 'power', name: '망각의 소용돌이', countdown: 2, disarm: 6, effects: [E('scramble', 1, { who: 'all' }), E('hitGrave', 6)] },
+        e3_syntax:  { id: 'e3_syntax',  kind: 'power', name: '어순 붕괴',       countdown: 2, disarm: 4, effects: [E('unleash', 3), E('hitMage', 4)] },
         e3_skein:   { id: 'e3_skein',   kind: 'minion', name: '엉킨 실타래', life: 5, each: [E('unleash', 1)] },
-        e3_shard:   { id: 'e3_shard',   kind: 'minion', name: '거울 조각',   life: 3, each: [E('hitMage', 2)] }
+        e3_shard:   { id: 'e3_shard',   kind: 'minion', name: '거울 조각',   life: 3, each: [E('hitMage', 2)] },
+        e3_unmake:  { id: 'e3_unmake',  kind: 'attack', name: '지워지는 순서', effects: [E('hitGrave', 5), E('scramble', 1, { who: 'all' })] },
+        e3_mirror:  { id: 'e3_mirror',  kind: 'minion', name: '깨진 큰 거울', life: 6, each: [E('hitMage', 3), E('unleash', 1)] }
       }
     }
   };
@@ -254,14 +261,14 @@
     turnDeck: { nemesis: 2, slots: { 1: 3, 2: 3, 3: 3, 4: 4 } },
 
     // 인원별 배율 (미지정 = 1). 시뮬레이션으로 맞춘다.
-    scaling: { 1: { nemLife: 1.55 }, 2: { nemLife: 1.25 }, 3: { nemLife: 0.95 }, 4: { nemLife: 1.65 } },
+    scaling: { 1: { nemLife: 1.1 }, 2: { nemLife: 0.8 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.8 } },
 
     // 난이도: 주린 자 생명 / 성채 생명 배율, 굶주림 시작값, 문턱 보정
     difficulties: {
       easy:    { name: '입문',   nemLife: 0.85, graveLife: 1.2 },
       normal:  { name: '보통' },
-      hard:    { name: '어려움', nemLife: 1.15, hungerStart: 1 },
-      despair: { name: '절망',   nemLife: 1.25, graveLife: 0.9, thresholdDelta: -1 }
+      hard:    { name: '어려움', skipEarly: 1 },
+      despair: { name: '절망',   skipEarly: 2 }
     },
 
     // 공급처: 추천 세트 (보석 3 + 유물 2 + 주문 4)
