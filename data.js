@@ -52,7 +52,7 @@
     spell('s_arrow', '사냥꾼의 마지막 화살', 3, [E('dmg', 4)]),
     spell('s_thief', '도둑의 손버릇', 3, [E('dmg', 2), E('recall', 1, { to: 'hand', pick: 'top' })]),
     spell('s_rage', '대장장이의 분노', 4, [E('dmg', 2), E('dmg', 3)]),
-    spell('s_prayer', '수녀의 잿빛 기도', 4, [E('heal', 3), E('dmg', 2)]),
+    spell('s_prayer', '수녀의 잿빛 기도', 4, [E('heal', 2), E('dmg', 2)]),
     spell('s_laugh', '광인의 웃음', 4, [E('dmg', 5), E('hitSelf', 1)]),
     spell('s_tail', '행렬의 끝자락', 4, [E('dmg', 3), E('hunger', -1)]),
     spell('s_breath', '병사의 마지막 숨', 5, [E('dmg', 4), E('healMage', 1, { to: 'ally' })]),
@@ -76,9 +76,9 @@
   ];
   const mages = [
     {
-      id: 'seo', name: '세오', role: '균형 잡힌 피해. 대가로 덱 맨 위 기억을 잊는다.', life: 10, chargeOnCast: 1,
+      id: 'seo', name: '세오', role: '균형 잡힌 피해. 대가로 덱 맨 위 기억을 잊는다.', life: 8, chargeOnCast: 1,
       startingDeck: { shard: 6, spark: 3, seo_flint: 1 },
-      ability: { name: '불씨 폭주', cost: 4, effects: [E('dmg', 5)], text: '열 4: 피해 5' },
+      ability: { name: '불씨 폭주', cost: 6, effects: [E('dmg', 4)], text: '열 6: 피해 4' },
       breaches: std(true, [
         { bonus: { type: 'dmg', n: 1 }, bonusText: '시전 시 첫 피해 +1', onOpen: [E('forget', 1, { from: 'deckTop' })], onOpenText: '덱 맨 위 1장 잊음' },
         { bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [E('forget', 1, { from: 'deckTop' })], onOpenText: '덱 맨 위 1장 잊음' },
@@ -109,11 +109,11 @@
       bot: { healBelow: 0.6 }
     },
     {
-      id: 'car', name: '새김꾼', role: '동료의 새김을 열어 준다. 자기 새김은 모두 닫힌 채 시작.', life: 9, chargeOnCast: 1, allClosed: true,
-      startingDeck: { shard: 7, spark: 2, car_knife: 1 },
-      ability: { name: '칼끝', cost: 4, effects: [E('openAlly', 1)], text: '열 4: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신)' },
+      id: 'car', name: '새김꾼', role: '동료의 새김을 열어 준다. 자기 새김은 모두 닫힌 채 시작.', life: 10, chargeOnCast: 1, allClosed: true,
+      startingDeck: { shard: 6, spark: 3, car_knife: 1 },
+      ability: { name: '칼끝', cost: 3, effects: [E('openAlly', 1)], text: '열 3: 동료 1명의 닫힌 새김 1곳을 즉시 연다 (동료가 없으면 자신)' },
       breaches: [
-        { open: false, focusCost: 1, openCost: 3, bonus: null },
+        { open: false, focusCost: 1, openCost: 2, bonus: null },
         { open: false, focusCost: 2, openCost: 4, bonus: { type: 'ember', n: 1 }, bonusText: '시전 시 불씨 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' },
         { open: false, focusCost: 2, openCost: 5, bonus: { type: 'charge', n: 1 }, bonusText: '시전 시 열 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' },
         { open: false, focusCost: 3, openCost: 6, bonus: { type: 'dmg', n: 1 }, bonusText: '시전 시 첫 피해 +1', onOpen: [{ op: 'chargeReset' }], onOpenText: '열 0으로' }
@@ -130,7 +130,7 @@
       // 굶주림: 격화(unleash)가 발동할 때마다 +step, threshold에 닿으면 삼킴(strike)
       unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3)] },
       targeting: 'random',
-      scaling: { 1: { nemLife: 1.3 }, 2: { nemLife: 0.9 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.85 } },
+      scaling: { 1: { nemLife: 1.35 }, 2: { nemLife: 0.85 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.85 } },
       // 1단계(약함) → 2단계 → 3단계(강함) 순서로 쌓는다. 단계 안에서만 섞인다.
       tiers: [
         { e1_breath: 1, e1_claw: 1, e1_ash: 1 },
@@ -154,7 +154,7 @@
       id: 'e2', name: '이름 없는 행렬', life: 75, blurb: '삼킬 때 모두의 버림 더미 맨 위 카드를 먹는다. 이름 없는 자를 처치하면 돌려받는다.',
       recommended: 'e2',
       // 이 적 전용 인원별 배율 (전역 scaling보다 우선)
-      scaling: { 1: { nemLife: 1.05 }, 2: { nemLife: 0.75 }, 3: { nemLife: 0.5 }, 4: { nemLife: 0.8 } },
+      scaling: { 1: { nemLife: 1.1 }, 2: { nemLife: 0.65 }, 3: { nemLife: 0.5 }, 4: { nemLife: 0.7 } },
       epitaph: { win: '행렬이 걸음을 멈춘다. 이름 없는 얼굴들이 하나씩 흩어진다.', lose: '이름이 하나씩 불린다. 대답하는 사람은 없다.', after: '돌아오지 않은 이름들은 아직 문 아래에 쌓여 있다.' },
       // 삼킴: 성채 -3, 모든 지기의 버림 더미 맨 위 1장이 먹힌다(이번 판에서 제거, 이름 더미로)
       unleash: { step: 1, threshold: 3, strike: [E('hitGrave', 3), E('devour', 1, { who: 'all' })] },
@@ -180,7 +180,7 @@
     e3: {
       id: 'e3', name: '뒤섞는 자', life: 80, blurb: '삼킬 때 한 명의 버림 더미를 섞는다. 종(차례 순서)도 뒤엉킨다.',
       recommended: 'e3',
-      scaling: { 1: { nemLife: 0.85 }, 2: { nemLife: 0.8 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.72, graveLife: 0.68 } },
+      scaling: { 1: { nemLife: 0.85 }, 2: { nemLife: 0.7 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.6, graveLife: 0.68 } },
       epitaph: { win: '말이 제 순서를 찾는다. 뒤섞는 자는 더 이상 말하지 못한다.', lose: '기억을, 너의, 내가, 정리해 주마. 아무도 제 이름을 기억하지 못한다.', after: '순서를 되찾은 기억은 아직 어딘가 한 줄씩 어긋나 있다.' },
       // 삼킴: 성채 -3, 지기 1명의 버림 더미가 뒤섞인다
       unleash: { step: 1, threshold: 4, strike: [E('hitGrave', 3), E('scramble', 1, { who: 'one' })] },
@@ -261,7 +261,7 @@
     turnDeck: { nemesis: 2, slots: { 1: 3, 2: 3, 3: 3, 4: 4 } },
 
     // 인원별 배율 (미지정 = 1). 시뮬레이션으로 맞춘다.
-    scaling: { 1: { nemLife: 1.1 }, 2: { nemLife: 0.8 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.8 } },
+    scaling: { 1: { nemLife: 1.1 }, 2: { nemLife: 0.75 }, 3: { nemLife: 0.55 }, 4: { nemLife: 0.7 } },
 
     // 난이도: 주린 자 생명 / 성채 생명 배율, 굶주림 시작값, 문턱 보정
     difficulties: {
